@@ -1,0 +1,56 @@
+<!-- Copiar en Supabase > Authentication > Email Templates > Magic Link.
+     Esta plantilla corresponde al código OPCIONAL, no al registro. -->
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body
+    style="
+      margin: 0;
+      background: #f8faf9;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #17202e;
+    "
+  >
+    <main
+      style="
+        max-width: 480px;
+        margin: 40px auto;
+        padding: 32px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+      "
+    >
+      <p style="margin: 0 0 28px; font-size: 22px; font-weight: bold; color: #047857">reserva.</p>
+      <h1 style="font-size: 22px; margin: 0 0 16px">Comprueba tu correo</h1>
+      <p style="font-size: 14px; line-height: 24px; color: #64748b">
+        Introduce este código en Mi cuenta para completar la verificación opcional:
+      </p>
+      <p
+        style="
+          padding: 20px;
+          text-align: center;
+          background: #ecfdf5;
+          border-radius: 12px;
+          font-size: 32px;
+          font-weight: bold;
+          letter-spacing: 8px;
+          color: #065f46;
+        "
+      >
+        {{ .Token }}
+      </p>
+      <p style="font-size: 13px; line-height: 22px; color: #64748b">
+        Tu cuenta ya está disponible. Este código no es obligatorio para usar tu agenda y solo puede
+        utilizarse una vez.
+      </p>
+      <p style="margin-top: 28px; font-size: 12px; line-height: 20px; color: #94a3b8">
+        Si no solicitaste este código, puedes ignorar este correo. No compartas el código con otras
+        personas.
+      </p>
+    </main>
+  </body>
+</html>

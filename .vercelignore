@@ -1,0 +1,21 @@
+# Solo se envía el código necesario para compilar la aplicación.
+node_modules
+.next
+.git
+.vercel
+.codex
+.agents
+.aws
+.env*
+*.pem
+*.tsbuildinfo
+coverage
+docs
+tests
+AGENTS.md
+README.md
+planificacion.md
+readme.referencia.md
+supabase-schema.sql
+supabase-email-code-template.html
+*-debug.log*

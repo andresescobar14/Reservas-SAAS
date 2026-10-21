@@ -1,0 +1,75 @@
+import Link from "next/link";
+import { ArrowLeft, Check, MessageCircle, Sparkles } from "lucide-react";
+import { Brand } from "@/components/brand";
+
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="grid min-h-screen lg:grid-cols-2">
+      <aside className="relative hidden flex-col overflow-hidden border-r border-emerald-100 bg-[#f4faf6] p-12 text-slate-800 lg:flex xl:p-16">
+        <Brand />
+        <div className="relative z-10 my-auto max-w-md py-16">
+          <span className="mb-6 inline-flex items-center gap-2 text-base text-primary">
+            <Sparkles size={16} /> Un poco más de orden. Mucho más tiempo.
+          </span>
+          <h2 className="text-5xl leading-[1.15] font-medium tracking-tight">
+            Tu negocio crece.
+            <br />
+            <span className="text-primary">Tu agenda fluye.</span>
+          </h2>
+          <p className="mt-6 text-lg leading-8 text-slate-600">
+            Todas tus reservas, tus clientes y tus próximas citas en un mismo espacio.
+          </p>
+          <div className="mt-9 space-y-4 text-base text-slate-600">
+            {[
+              "Una agenda que se adapta a tu negocio",
+              "Un directorio con el historial de tus clientes",
+              "14 días para descubrir una forma más simple",
+            ].map((text) => (
+              <p key={text} className="flex items-center gap-3">
+                <Check size={17} className="shrink-0 text-primary" />
+                {text}
+              </p>
+            ))}
+          </div>
+          <div className="rim-card mt-12 rounded-2xl p-6">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-primary">
+                <MessageCircle size={23} />
+              </div>
+              <div>
+                <p className="text-base font-medium">Un recordatorio a tiempo</p>
+                <p className="mt-1 text-base text-slate-500">Así se verá con WhatsApp conectado</p>
+              </div>
+            </div>
+            <p className="mt-4 rounded-xl bg-emerald-50/70 p-4 text-base leading-7 text-slate-600">
+              ¡Hola, Ana! Te recordamos tu cita de mañana a las 10:00. Te esperamos ✨
+            </p>
+          </div>
+        </div>
+        <p className="text-base text-slate-500">Hecho para negocios que valoran su tiempo.</p>
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-40 -bottom-48 size-[600px] rounded-full border border-emerald-900/5"
+        />
+      </aside>
+      <main className="flex min-h-screen flex-col p-6 sm:p-12">
+        <div className="flex items-center justify-between">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-base text-slate-600 hover:text-primary"
+          >
+            <ArrowLeft size={15} />
+            Volver al inicio
+          </Link>
+          <div className="lg:hidden">
+            <Brand compact />
+          </div>
+        </div>
+        <div className="mx-auto my-auto w-full max-w-md py-16">{children}</div>
+        <p className="text-center text-sm text-slate-400">
+          Reserva · Menos pendientes, más posibilidades.
+        </p>
+      </main>
+    </div>
+  );
+}
