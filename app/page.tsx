@@ -253,7 +253,7 @@ export default function HomePage() {
                   key={title}
                   className="landing-feature group flex flex-col rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
                 >
-                  <div className="mb-7 flex size-12 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 group-hover:bg-primary group-hover:text-white">
+                  <div className="mb-7 flex size-12 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 group-hover:bg-primary group-hover:text-pure">
                     <Icon size={25} strokeWidth={1.5} aria-hidden="true" />
                   </div>
                   <h3 className="text-xl leading-7 font-medium tracking-[-0.02em] text-slate-900">
@@ -300,7 +300,7 @@ export default function HomePage() {
                   key={number}
                   className="group rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
                 >
-                  <span className="flex size-12 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-base font-medium text-emerald-700 transition-colors duration-300 group-hover:bg-primary group-hover:text-white">
+                  <span className="flex size-12 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-base font-medium text-emerald-700 transition-colors duration-300 group-hover:bg-primary group-hover:text-pure">
                     {number}
                   </span>
                   <h3 className="mt-7 text-xl font-medium tracking-[-0.02em] text-slate-900">
@@ -395,7 +395,7 @@ export default function HomePage() {
                   aria-labelledby="monthly-plan-title"
                   className="landing-pro beam relative flex flex-col rounded-2xl border-2 border-primary bg-white p-8 pt-10 md:min-h-[606px] md:py-12"
                 >
-                  <span className="absolute -top-4 left-1/2 inline-flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-[32px] bg-primary px-4 py-1.5 text-sm font-medium text-white">
+                  <span className="absolute -top-4 left-1/2 inline-flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-[32px] bg-primary px-4 py-1.5 text-sm font-medium text-pure">
                     <Sparkles size={14} strokeWidth={1.5} aria-hidden="true" />
                     Más popular
                   </span>

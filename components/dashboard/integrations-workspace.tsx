@@ -57,7 +57,7 @@ export function WhatsAppWorkspace() {
               <CardDescription>Vista previa del mensaje · no se ha enviado</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-xl bg-[#eaf2eb] p-5">
+              <div className="rounded-xl bg-emerald-50 p-5">
                 <div className="rounded-lg rounded-tl-none bg-white p-4 shadow-sm">
                   <p className="text-sm leading-6 text-slate-600">
                     ¡Hola, Ana! 👋

@@ -115,7 +115,7 @@ export function CustomersWorkspace({
                 return (
                   <TableRow
                     key={customer.id}
-                    className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60"
+                    className="border-b border-slate-100 last:border-0 hover:bg-slate-100/60"
                   >
                     <TableCell className="px-6 py-5">
                       <div className="flex items-center gap-3">

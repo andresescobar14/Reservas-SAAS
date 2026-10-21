@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const links = [
   { id: "funcionalidades", label: "Producto" },
@@ -80,7 +81,8 @@ export function SiteHeader() {
               Demo
             </Link>
           </div>
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-4 sm:gap-5">
+            <ThemeToggle />
             <Link
               href="/login"
               className="hidden text-sm text-slate-600 transition-colors hover:text-primary sm:block"

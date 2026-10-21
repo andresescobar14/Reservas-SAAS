@@ -9,10 +9,10 @@ export function Brand({ light = false, compact = false }: { light?: boolean; com
       aria-label="Reserva, inicio"
       className={cn(
         "inline-flex items-center gap-2.5 text-xl font-medium tracking-tight",
-        light && "text-white",
+        light && "text-pure",
       )}
     >
-      <span className="flex size-8 items-center justify-center rounded-lg bg-emerald-700 text-white">
+      <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-pure">
         <CalendarCheck2 size={19} strokeWidth={2.2} />
       </span>
       {!compact && (

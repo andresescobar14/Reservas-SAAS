@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { Brand } from "@/components/brand";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 import { trialDaysRemaining } from "@/lib/subscription";
 import { signOut } from "@/app/actions/auth";
@@ -54,10 +55,11 @@ export function DashboardShell({
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="min-h-screen bg-slate-50">
+      <div className="relative min-h-screen bg-slate-50">
+        <div aria-hidden="true" className="dash-ambient" />
         {menuOpen && (
           <button
-            className="fixed inset-0 z-30 bg-slate-950/30 lg:hidden"
+            className="fixed inset-0 z-30 bg-black/40 lg:hidden"
             aria-label="Cerrar menú"
             onClick={() => setMenuOpen(false)}
           />
@@ -97,7 +99,7 @@ export function DashboardShell({
                 "relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                 selected === id
                   ? "text-emerald-800"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-800",
+                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-800",
               );
               const content = (
                 <>
@@ -142,7 +144,7 @@ export function DashboardShell({
           </nav>
           <div className="mt-auto pt-10">
             {company.subscription_status === "trial" && (
-              <div className="rounded-xl border border-emerald-100 bg-[#f5faf6] p-4">
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
                 <div className="flex items-center gap-2 text-xs font-medium text-emerald-900">
                   <Sparkles size={15} />
                   Tu espacio está creciendo
@@ -203,7 +205,7 @@ export function DashboardShell({
             </div>
           </div>
         </aside>
-        <div className="lg:pl-60">
+        <div className="relative z-10 lg:pl-60">
           <header className="sticky top-0 z-20 flex h-[73px] items-center justify-between border-b border-slate-200/70 bg-white/80 px-5 backdrop-blur-md sm:px-8">
             <div className="flex items-center gap-3 text-xs">
               <button
@@ -219,6 +221,7 @@ export function DashboardShell({
               <span className="font-medium text-slate-600">{title}</span>
             </div>
             <div className="flex items-center gap-3">
+              <ThemeToggle />
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-medium text-emerald-700">
                 <span className="pulse-dot size-1.5 rounded-full bg-emerald-500" />
                 {demo
@@ -243,9 +246,10 @@ export function DashboardShell({
           <main id="contenido" className="mx-auto max-w-[1500px] p-5 sm:p-8">
             <motion.div
               key={selected}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="dash-enter"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
             >
               {children}
             </motion.div>

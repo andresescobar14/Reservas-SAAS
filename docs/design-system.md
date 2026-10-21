@@ -1,5 +1,7 @@
 # Sistema visual de Reserva
 
+> **Actualización:** el tema predeterminado es oscuro (lienzo verde casi negro `#030f0a`, superficies `#071811`) con interruptor a claro. Las variables viven en `:root` (claro) y `.dark` (oscuro) de `app/globals.css`; en `.dark` también se reasignan las escalas de Tailwind (`slate`, `emerald`, `amber`…) para que las utilidades existentes se adapten. El script del layout aplica la preferencia antes del primer pintado. Donde el texto de abajo diga "un único tema claro", rige esta nota.
+
 La referencia compartida por el usuario es Reflect Notes. Se adapta su composición editorial y sus bordes iluminados al tema claro y verde solicitado para Reserva. La referencia visual de precios es la captura de Unicorn Studio compartida en el chat.
 
 ## Tokens y tipografía

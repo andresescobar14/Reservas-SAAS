@@ -8,7 +8,7 @@ Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, shadcn/ui (Radix)
 
 ## Interfaz y precios
 
-La aplicación utiliza exclusivamente tema claro, con verde como color principal en botones, enlaces, focus e iconos. La portada adapta la composición de Reflect Notes a superficies blancas, navegación flotante y tarjetas con brillo interior. La sección `/#precios` sigue las dos columnas de la referencia de Unicorn Studio: prueba de **14 días gratis** y **Reserva Pro por $499 MXN al mes**.
+La aplicación arranca en **modo oscuro** y ofrece un botón (sol/luna) para cambiar a modo claro; la elección se guarda en `localStorage` (`reserva-theme`). El verde es el color principal en botones, enlaces, focus e iconos. La portada adapta la composición de Reflect Notes a superficies blancas, navegación flotante y tarjetas con brillo interior. La sección `/#precios` sigue las dos columnas de la referencia de Unicorn Studio: prueba de **14 días gratis** y **Reserva Pro por $499 MXN al mes**.
 
 Los precios se editan en `lib/pricing.ts` y se reutilizan en `/suscripcion`. Los pagos reales requieren conectar el checkout y su webhook; mostrar un precio no activa cobros. WhatsApp y Google Calendar se identifican como integraciones en preparación.
 

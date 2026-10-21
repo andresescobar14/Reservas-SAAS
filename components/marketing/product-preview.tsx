@@ -86,7 +86,7 @@ export function ProductPreview() {
                 Tu agenda, de un vistazo.
               </p>
             </div>
-            <span className="hidden items-center gap-1 rounded-md bg-primary px-3 py-2 text-xs text-white md:flex">
+            <span className="hidden items-center gap-1 rounded-md bg-primary px-3 py-2 text-xs text-pure md:flex">
               + Nueva reserva
             </span>
           </div>
@@ -168,7 +168,7 @@ export function ProductPreview() {
             transition={{ delay: 1.9, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             className="float-soft absolute right-4 bottom-12 hidden items-center gap-2.5 rounded-xl border border-emerald-200 bg-white px-4 py-3 text-xs font-medium text-emerald-900 shadow-lg shadow-emerald-900/10 md:flex"
           >
-            <span className="flex size-6 items-center justify-center rounded-full bg-primary text-white">
+            <span className="flex size-6 items-center justify-center rounded-full bg-primary text-pure">
               <Check size={13} />
             </span>
             Reserva guardada con éxito

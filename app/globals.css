@@ -2,7 +2,10 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
+  --color-pure: #ffffff;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif;
@@ -46,9 +49,9 @@
   --radius-4xl: 32px;
 }
 
-/* Tema único: claro. La preferencia del sistema no altera las superficies. */
+/* Tema claro (base). El oscuro se activa con la clase .dark en <html> y es el predeterminado. */
 :root {
-  color-scheme: only light;
+  color-scheme: light;
   --background: #f8fafc;
   --foreground: #172b25;
   --card: #ffffff;
@@ -216,7 +219,6 @@ summary:focus-visible {
 }
 /* Reflect: composición editorial, radios precisos y luz interior, en claro y verde. */
 .premium-landing {
-  color-scheme: only light;
   font-feature-settings:
     "calt" 0,
     "cv10",
@@ -667,4 +669,270 @@ summary:focus-visible {
 }
 .void-panel .landing-heading {
   color: #ecfdf5;
+}
+
+/* ═════════ Modo oscuro: lienzo verde casi negro, superficies con brillo interior ═════════ */
+.dark {
+  color-scheme: dark;
+  --background: #030f0a;
+  --foreground: #ecfdf5;
+  --card: #071811;
+  --card-foreground: #ecfdf5;
+  --popover: #08201a;
+  --popover-foreground: #ecfdf5;
+  --primary: hsl(160 84% 39%);
+  --primary-hover: hsl(160 84% 45%);
+  --primary-foreground: #ffffff;
+  --secondary: #0a3626;
+  --secondary-foreground: #a7f3d0;
+  --muted: #0b2318;
+  --muted-foreground: #8fb0a1;
+  --accent: #0a3626;
+  --accent-foreground: #6ee7b7;
+  --destructive: #f87171;
+  --border: #143528;
+  --input: #1f4a39;
+  --sidebar: #05140e;
+  --sidebar-foreground: #ecfdf5;
+  --sidebar-accent: #0a3626;
+  --sidebar-accent-foreground: #6ee7b7;
+  --sidebar-border: #143528;
+
+  /* Las utilidades de Tailwind (bg-white, text-slate-600…) se reasignan al tema oscuro */
+  --color-white: #071811;
+  --color-slate-50: #030f0a;
+  --color-slate-100: #0b2318;
+  --color-slate-200: #143528;
+  --color-slate-300: #1f4a39;
+  --color-slate-400: #6a8f7f;
+  --color-slate-500: #8fb0a1;
+  --color-slate-600: #b0cbbf;
+  --color-slate-700: #cfe2d9;
+  --color-slate-800: #e3f0ea;
+  --color-slate-900: #f1fbf6;
+  --color-slate-950: #f7fffb;
+  --color-emerald-50: #06271b;
+  --color-emerald-100: #0a3626;
+  --color-emerald-200: #0e4d36;
+  --color-emerald-700: #6ee7b7;
+  --color-emerald-800: #a7f3d0;
+  --color-emerald-900: #d1fae5;
+  --color-amber-50: #2a2008;
+  --color-amber-100: #3a2c0a;
+  --color-amber-200: #5c4510;
+  --color-amber-800: #fcd34d;
+  --color-amber-900: #fde68a;
+  --color-red-50: #2a0e0e;
+  --color-red-700: #fca5a5;
+  --color-violet-50: #1e1538;
+  --color-violet-700: #c4b5fd;
+}
+.dark ::selection {
+  background: #10b98155;
+  color: #ecfdf5;
+}
+.dark .eyebrow {
+  color: #6ee7b7;
+}
+.dark .field-label {
+  color: #b0cbbf;
+}
+.dark .native-select {
+  background: #071811;
+  color: #b0cbbf;
+}
+.dark .section-heading {
+  color: #ecfdf5;
+}
+.dark .brand-text,
+.dark .landing-accent-text {
+  background-image: linear-gradient(100deg, #34d399 5%, #6ee7b7 40%, #2dd4bf 60%, #34d399 95%);
+  background-size: 220% 100%;
+}
+.dark .site-nav,
+.dark .premium-landing .site-nav {
+  border-color: #143528;
+  background: #05140ecc;
+  box-shadow: inset 0 0 24px #ffffff0a;
+  backdrop-filter: blur(12px);
+}
+.dark .site-nav[data-scrolled="true"] {
+  border-color: #1f4a39;
+  background: #05140ee6;
+  box-shadow:
+    0 8px 30px #00000066,
+    inset 0 0 24px #34d3990f;
+}
+.dark .hero-surface {
+  background: radial-gradient(ellipse at 50% 72%, #10b9811f, transparent 62%);
+}
+.dark .product-preview,
+.dark .premium-landing .product-preview {
+  border-color: #143528;
+  background: #071811;
+  box-shadow: inset 0 0 24px #34d3990d;
+}
+.dark .product-preview:hover {
+  border-color: #0e7a55;
+}
+.dark .rim-card {
+  border-color: #143528;
+  background: #071811;
+  box-shadow: inset 0 0 24px #ffffff0a;
+}
+.dark .pricing-section {
+  background: #040f0a;
+  border-block-color: #0e281d;
+}
+.dark .pricing-glow {
+  border-color: #0e7a55;
+  background: #071811;
+}
+.dark .landing-secondary:hover {
+  border-color: #0e7a55;
+  background-color: #0a3626;
+}
+.dark .landing-preview-frame {
+  border-color: #143528;
+  background: #05140e99;
+  box-shadow: inset 0 1px 12px #ffffff0a;
+}
+.dark .landing-feature:hover {
+  border-color: #0e7a55;
+}
+.dark .landing-trial {
+  box-shadow: inset 0 0 24px #ffffff08;
+}
+.dark .landing-pro {
+  box-shadow:
+    inset 0 0 28px #10b98122,
+    inset 0 -14px 24px #10b9811a;
+}
+.dark .star-light {
+  background: #a7f3d0;
+  opacity: 0.4;
+}
+.dark .aurora-blob {
+  opacity: 0.35;
+}
+.dark .landing-constellation {
+  background-image: radial-gradient(#34d39933 0.8px, transparent 0.8px);
+}
+.dark .spotlight::before {
+  background: radial-gradient(
+    320px circle at var(--mx, 50%) var(--my, 50%),
+    #34d3991a,
+    transparent 70%
+  );
+}
+.dark .landing-skip-link {
+  background: #047857;
+}
+.dark .premium-landing {
+  background-image: radial-gradient(ellipse at 50% 0%, #0a3626 0%, transparent 55%);
+}
+.dark .void-panel {
+  border-color: #0e4d36;
+}
+
+/* Calendario en oscuro */
+.dark .calendar-wrap {
+  --fc-border-color: #143528;
+  --fc-today-bg-color: #0a2a1d;
+  --fc-neutral-bg-color: #06150e;
+  --fc-page-bg-color: #071811;
+  --fc-now-indicator-color: #34d399;
+}
+.dark .calendar-wrap .fc-col-header-cell,
+.dark .calendar-wrap .fc-daygrid-day-number {
+  color: #8fb0a1;
+}
+.dark .calendar-wrap .fc-timegrid-slot-label {
+  color: #6a8f7f;
+}
+.dark .calendar-wrap .fc-day-today .fc-col-header-cell-cushion {
+  color: #6ee7b7;
+}
+.dark .calendar-wrap .booking-green {
+  background: #0a3626;
+  border-color: #34d399;
+  color: #a7f3d0;
+}
+.dark .calendar-wrap .booking-blue {
+  background: #0c2a3d;
+  border-color: #60a5fa;
+  color: #bfdbfe;
+}
+.dark .calendar-wrap .booking-violet {
+  background: #251a45;
+  border-color: #a78bfa;
+  color: #ddd6fe;
+}
+.dark .calendar-wrap .booking-completed {
+  background: #0f1f19;
+  border-color: #3f5f52;
+  color: #8fb0a1;
+}
+
+/* ═════════ Dashboard: entrada escalonada y ambiente ═════════ */
+@keyframes dash-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.dash-enter > * {
+  animation: dash-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.dash-enter > *:nth-child(2) {
+  animation-delay: 70ms;
+}
+.dash-enter > *:nth-child(3) {
+  animation-delay: 140ms;
+}
+.dash-enter > *:nth-child(4) {
+  animation-delay: 210ms;
+}
+.dash-enter > *:nth-child(n + 5) {
+  animation-delay: 280ms;
+}
+.dash-ambient {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 80% -5%, #10b98126, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 10% 105%, #2dd4bf14, transparent 70%);
+}
+.dark .dash-ambient {
+  opacity: 1;
+}
+.dash-card {
+  transition:
+    transform 250ms ease,
+    box-shadow 250ms ease,
+    border-color 250ms ease;
+}
+.dash-card:hover {
+  transform: translateY(-2px);
+  border-color: #6ee7b7;
+  box-shadow: 0 10px 30px #04785714;
+}
+.dark .dash-card:hover {
+  border-color: #0e7a55;
+  box-shadow: 0 10px 30px #00000066;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dash-enter > * {
+    animation: none;
+  }
+  .dash-card:hover {
+    transform: none;
+  }
 }

@@ -2,11 +2,12 @@ import Link from "next/link";
 import { ArrowLeft, Check, MessageCircle, Sparkles } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { StarField } from "@/components/marketing/motion";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
-      <aside className="relative hidden flex-col overflow-hidden border-r border-emerald-100 bg-[#f4faf6] p-12 text-slate-800 lg:flex xl:p-16">
+      <aside className="relative hidden flex-col overflow-hidden border-r border-emerald-100 bg-emerald-50/60 p-12 text-slate-800 lg:flex xl:p-16">
         <StarField />
         <div
           aria-hidden="true"
@@ -73,11 +74,18 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <ArrowLeft size={15} />
             Volver al inicio
           </Link>
-          <div className="lg:hidden">
-            <Brand compact />
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <div className="lg:hidden">
+              <Brand compact />
+            </div>
           </div>
         </div>
-        <div className="mx-auto my-auto w-full max-w-md py-16">{children}</div>
+        <div className="animate-in fade-in slide-in-from-bottom-4 mx-auto my-auto w-full max-w-md py-16 duration-700">
+          <div className="rounded-2xl border border-slate-200 bg-white/70 p-7 shadow-[inset_0_0_24px_#10b9810d] backdrop-blur sm:p-9">
+            {children}
+          </div>
+        </div>
         <p className="text-center text-sm text-slate-400">
           Reserva · Menos pendientes, más posibilidades.
         </p>
