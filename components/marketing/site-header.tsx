@@ -1,32 +1,89 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 
+const links = [
+  { id: "funcionalidades", label: "Producto" },
+  { id: "como-funciona", label: "Cómo funciona" },
+  { id: "precios", label: "Precios" },
+] as const;
+
 export function SiteHeader() {
+  const [scrolled, setScrolled] = useState(false);
+  const [active, setActive] = useState<string>("");
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) if (entry.isIntersecting) setActive(entry.target.id);
+      },
+      { rootMargin: "-45% 0px -50% 0px" },
+    );
+    for (const { id } of links) {
+      const node = document.getElementById(id);
+      if (node) observer.observe(node);
+    }
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      observer.disconnect();
+    };
+  }, []);
+
   return (
-    <header className="relative z-20 mx-auto max-w-[1200px] px-5 pt-6 sm:px-8">
-      <nav aria-label="Navegación principal" className="site-nav">
-        <div className="flex min-h-16 items-center justify-between gap-4 px-5 sm:px-6">
+    <header className="sticky top-0 z-40 mx-auto max-w-[1200px] px-5 pt-4 sm:px-8 sm:pt-5">
+      <motion.nav
+        aria-label="Navegación principal"
+        data-scrolled={scrolled}
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="site-nav"
+      >
+        <div
+          className={`flex items-center justify-between gap-4 px-5 transition-[min-height] duration-300 sm:px-6 ${
+            scrolled ? "min-h-14" : "min-h-16"
+          }`}
+        >
           <Brand />
-          <div className="hidden items-center gap-7 text-sm text-slate-600 lg:flex">
-            <Link href="/#funcionalidades" className="transition-colors hover:text-primary">
-              Producto
-            </Link>
-            <Link href="/#como-funciona" className="transition-colors hover:text-primary">
-              Cómo funciona
-            </Link>
-            <Link href="/#precios" className="transition-colors hover:text-primary">
-              Precios
-            </Link>
-            <Link href="/demo" className="transition-colors hover:text-primary">
+          <div className="hidden items-center gap-1 text-sm text-slate-600 lg:flex">
+            {links.map(({ id, label }) => (
+              <Link
+                key={id}
+                href={`/#${id}`}
+                className="relative rounded-full px-4 py-2 transition-colors hover:text-primary"
+              >
+                {active === id && (
+                  <motion.span
+                    layoutId="nav-active"
+                    className="absolute inset-0 rounded-full bg-emerald-50"
+                    transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                  />
+                )}
+                <span className={`relative ${active === id ? "text-emerald-800" : ""}`}>
+                  {label}
+                </span>
+              </Link>
+            ))}
+            <Link
+              href="/demo"
+              className="relative rounded-full px-4 py-2 transition-colors hover:text-primary"
+            >
               Demo
             </Link>
           </div>
           <div className="flex items-center gap-5">
             <Link
               href="/login"
-              className="hidden text-sm text-slate-600 hover:text-primary sm:block"
+              className="hidden text-sm text-slate-600 transition-colors hover:text-primary sm:block"
             >
               Iniciar sesión
             </Link>
@@ -52,7 +109,7 @@ export function SiteHeader() {
             Acceder
           </Link>
         </div>
-      </nav>
+      </motion.nav>
     </header>
   );
 }

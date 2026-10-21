@@ -4,7 +4,7 @@ Base local de un SaaS B2B para gestionar reservas y clientes, construida según 
 
 ## Stack
 
-Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, shadcn/ui (Radix), Lucide, Supabase Auth/PostgreSQL, FullCalendar, Luxon, Sonner, AOS y GSAP. El archivo `package-lock.json` fija las versiones instaladas. La CLI actual de shadcn es `shadcn`, sucesora de `shadcn-ui`.
+Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, shadcn/ui (Radix), Lucide, Supabase Auth/PostgreSQL, FullCalendar, Luxon, Sonner y Framer Motion. El archivo `package-lock.json` fija las versiones instaladas. La CLI actual de shadcn es `shadcn`, sucesora de `shadcn-ui`.
 
 ## Interfaz y precios
 

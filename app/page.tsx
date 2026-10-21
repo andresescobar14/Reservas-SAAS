@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MotionConfig, motion, type Variants } from "framer-motion";
+import { MotionConfig, motion } from "framer-motion";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -17,19 +17,18 @@ import {
 } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { ProductPreview } from "@/components/marketing/product-preview";
+import {
+  ScrollProgress,
+  ScrollTilt,
+  SpotlightCard,
+  StarField,
+  fadeUp,
+  revealViewport,
+  stagger,
+} from "@/components/marketing/motion";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { Button } from "@/components/ui/button";
 import { monthlyFeatures, pricing, trialFeatures } from "@/lib/pricing";
-
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
-};
-const stagger: Variants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.12 } },
-};
-const revealViewport = { once: true, amount: 0.15 } as const;
 
 const features = [
   {
@@ -56,6 +55,16 @@ const features = [
     text: "Preparamos recordatorios 24 horas antes de cada cita, desde el número de tu negocio.",
     label: "Próximamente",
   },
+];
+
+const industries = [
+  "Clínicas",
+  "Barberías",
+  "Spas",
+  "Talleres",
+  "Consultorías",
+  "Canchas deportivas",
+  "Profesionales independientes",
 ];
 
 const steps = [
@@ -99,6 +108,7 @@ export default function HomePage() {
         <a href="#contenido" className="landing-skip-link">
           Ir al contenido
         </a>
+        <ScrollProgress />
         <SiteHeader />
         <main id="contenido">
           <section
@@ -106,6 +116,15 @@ export default function HomePage() {
             className="premium-hero relative px-5 pt-24 pb-24 text-center sm:px-8 lg:pt-28 lg:pb-32"
           >
             <div aria-hidden="true" className="landing-constellation" />
+            <StarField />
+            <div
+              aria-hidden="true"
+              className="aurora-blob top-10 left-[8%] h-72 w-72 bg-emerald-300/40"
+            />
+            <div
+              aria-hidden="true"
+              className="aurora-blob top-52 right-[6%] h-80 w-80 bg-teal-200/50 [animation-delay:-6s]"
+            />
             <div className="relative mx-auto max-w-[1200px]">
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
@@ -118,8 +137,8 @@ export default function HomePage() {
               </motion.div>
               <motion.h1
                 id="hero-title"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 transition={{ duration: 0.6 }}
                 className="mx-auto mt-7 max-w-4xl text-[clamp(2.75rem,6vw,4.5rem)] leading-[1.11] font-medium tracking-[-0.04em] text-slate-900"
               >
@@ -168,25 +187,32 @@ export default function HomePage() {
                 initial={{ opacity: 0, y: 32 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
-                className="landing-preview-frame relative mx-auto mt-16 max-w-[1100px] rounded-2xl p-2 sm:mt-20 sm:p-3"
+                className="mx-auto mt-16 max-w-[1100px] sm:mt-20"
               >
-                <ProductPreview />
+                <ScrollTilt>
+                  <div className="landing-preview-frame relative rounded-2xl p-2 shadow-2xl shadow-emerald-900/10 sm:p-3">
+                    <ProductPreview />
+                  </div>
+                </ScrollTilt>
               </motion.div>
               <div className="mx-auto mt-14 max-w-4xl">
                 <p className="text-xs font-medium tracking-[0.14em] text-slate-500">
                   HECHO PARA TU NEGOCIO
                 </p>
-                <ul className="mt-5 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-base text-slate-600 sm:gap-x-10">
-                  {[
-                    "Clínicas",
-                    "Barberías",
-                    "Spas",
-                    "Talleres",
-                    "Profesionales independientes",
-                  ].map((industry) => (
-                    <li key={industry}>{industry}</li>
-                  ))}
-                </ul>
+                <div className="marquee mt-5">
+                  <ul className="marquee-track text-base text-slate-600">
+                    {[...industries, ...industries].map((industry, index) => (
+                      <li
+                        key={`${industry}-${index}`}
+                        aria-hidden={index >= industries.length ? true : undefined}
+                        className="flex items-center gap-12 whitespace-nowrap"
+                      >
+                        {industry}
+                        <span className="size-1 rounded-full bg-emerald-400" aria-hidden="true" />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
           </section>
@@ -223,12 +249,11 @@ export default function HomePage() {
               className="mt-14 grid gap-4 sm:grid-cols-2 lg:mt-16 lg:grid-cols-4"
             >
               {features.map(({ Icon, title, text, label }) => (
-                <motion.article
+                <SpotlightCard
                   key={title}
-                  variants={fadeUp}
                   className="landing-feature group flex flex-col rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
                 >
-                  <div className="mb-7 flex size-12 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600">
+                  <div className="mb-7 flex size-12 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 group-hover:bg-primary group-hover:text-white">
                     <Icon size={25} strokeWidth={1.5} aria-hidden="true" />
                   </div>
                   <h3 className="text-xl leading-7 font-medium tracking-[-0.02em] text-slate-900">
@@ -236,7 +261,7 @@ export default function HomePage() {
                   </h3>
                   <p className="mt-4 text-base leading-7 text-slate-600">{text}</p>
                   <p className="mt-auto pt-7 text-sm font-medium text-emerald-800">{label}</p>
-                </motion.article>
+                </SpotlightCard>
               ))}
             </motion.div>
           </section>
@@ -263,7 +288,7 @@ export default function HomePage() {
                 Empieza con lo que ya conoces. Nosotros ponemos el espacio para organizarlo.
               </p>
             </motion.div>
-            <motion.ol
+            <motion.div
               variants={stagger}
               initial="hidden"
               whileInView="visible"
@@ -271,18 +296,20 @@ export default function HomePage() {
               className="mt-14 grid gap-6 md:grid-cols-3 lg:mt-16"
             >
               {steps.map(({ number, title, text }) => (
-                <motion.li key={number} variants={fadeUp} className="landing-step relative p-8">
-                  <span className="text-5xl leading-none font-medium tracking-tight text-emerald-700/35">
+                <SpotlightCard
+                  key={number}
+                  className="group rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
+                >
+                  <span className="flex size-12 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-base font-medium text-emerald-700 transition-colors duration-300 group-hover:bg-primary group-hover:text-white">
                     {number}
-                    <span className="text-primary">.</span>
                   </span>
                   <h3 className="mt-7 text-xl font-medium tracking-[-0.02em] text-slate-900">
                     {title}
                   </h3>
                   <p className="mt-4 text-base leading-7 text-slate-600">{text}</p>
-                </motion.li>
+                </SpotlightCard>
               ))}
-            </motion.ol>
+            </motion.div>
           </section>
 
           <section
@@ -366,7 +393,7 @@ export default function HomePage() {
                 <motion.article
                   variants={fadeUp}
                   aria-labelledby="monthly-plan-title"
-                  className="landing-pro relative flex flex-col rounded-2xl border-2 border-primary bg-white p-8 pt-10 md:min-h-[606px] md:py-12"
+                  className="landing-pro beam relative flex flex-col rounded-2xl border-2 border-primary bg-white p-8 pt-10 md:min-h-[606px] md:py-12"
                 >
                   <span className="absolute -top-4 left-1/2 inline-flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-[32px] bg-primary px-4 py-1.5 text-sm font-medium text-white">
                     <Sparkles size={14} strokeWidth={1.5} aria-hidden="true" />
@@ -463,28 +490,32 @@ export default function HomePage() {
               initial="hidden"
               whileInView="visible"
               viewport={revealViewport}
-              className="landing-closing relative mx-auto max-w-[1136px] overflow-hidden rounded-2xl border border-emerald-200 bg-white px-6 py-20 sm:px-12 sm:py-24"
+              className="void-panel relative mx-auto max-w-[1136px] overflow-hidden rounded-2xl px-6 py-20 sm:px-12 sm:py-24"
             >
+              <StarField tone="dark" />
               <div aria-hidden="true" className="aurora-divider absolute inset-x-0 top-0" />
               <Sparkles
                 size={27}
                 strokeWidth={1.5}
-                className="mx-auto text-emerald-600"
+                className="float-soft relative mx-auto text-emerald-300"
                 aria-hidden="true"
               />
-              <h2 id="closing-title" className="landing-heading mx-auto mt-7 max-w-2xl">
+              <h2 id="closing-title" className="landing-heading relative mx-auto mt-7 max-w-2xl">
                 Haz espacio para lo que viene.
               </h2>
-              <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-slate-600">
+              <p className="relative mx-auto mt-6 max-w-xl text-lg leading-8 text-emerald-100/80">
                 Empieza con una agenda más simple. Tu negocio y tu tiempo lo van a agradecer.
               </p>
-              <Button asChild className="landing-cta mt-9 h-12 px-6 text-base">
+              <Button
+                asChild
+                className="landing-cta relative mt-9 h-12 px-6 text-base shadow-[0_0_40px_#10b98166]"
+              >
                 <Link href="/register">
                   Crear mi espacio gratis
                   <ArrowUpRight size={18} aria-hidden="true" />
                 </Link>
               </Button>
-              <p className="mt-4 text-base text-slate-600">
+              <p className="relative mt-4 text-base text-emerald-100/70">
                 {pricing.trialDays} días para descubrir otra forma de organizarte.
               </p>
             </motion.div>

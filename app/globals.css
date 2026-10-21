@@ -242,6 +242,23 @@ summary:focus-visible {
     box-shadow 200ms ease;
 }
 .premium-landing .site-nav [data-slot="button"][data-variant="default"]:hover,
+.premium-landing .landing-cta {
+  position: relative;
+  overflow: hidden;
+}
+.premium-landing .landing-cta::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 -60%;
+  width: 40%;
+  transform: skewX(-20deg);
+  background: linear-gradient(90deg, transparent, #ffffff55, transparent);
+  transition: left 600ms ease;
+  pointer-events: none;
+}
+.premium-landing .landing-cta:hover::after {
+  left: 130%;
+}
 .premium-landing .landing-cta:hover {
   background-color: var(--primary-hover);
   color: #ffffff;
@@ -288,9 +305,11 @@ summary:focus-visible {
   box-shadow: inset 0 -7px 11px #10b98112;
 }
 .landing-accent-text {
-  background: linear-gradient(100deg, #047857 10%, #059669 55%, #10b981);
+  background: linear-gradient(100deg, #047857 5%, #10b981 40%, #2dd4bf 60%, #047857 95%);
+  background-size: 220% 100%;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  animation: text-shimmer 7s ease-in-out infinite alternate;
 }
 .landing-heading {
   font-size: clamp(2.25rem, 4.5vw, 3.25rem);
@@ -415,6 +434,14 @@ summary:focus-visible {
   font-weight: 600;
 }
 @media (prefers-reduced-motion: reduce) {
+  .star,
+  .aurora-blob,
+  .landing-accent-text,
+  .beam::before,
+  .marquee-track,
+  .float-soft {
+    animation: none !important;
+  }
   html {
     scroll-behavior: auto;
   }
@@ -423,10 +450,6 @@ summary:focus-visible {
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
-  }
-  [data-aos] {
-    opacity: 1 !important;
-    transform: none !important;
   }
   .premium-landing .landing-cta:hover,
   .premium-landing .landing-secondary:hover,
@@ -442,4 +465,206 @@ summary:focus-visible {
     opacity: 1 !important;
     transform: none !important;
   }
+}
+
+/* ───────── Modernización: movimiento y luz (referencia Reflect, en verde) ───────── */
+@property --beam-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes text-shimmer {
+  to {
+    background-position: 100% 0;
+  }
+}
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.15);
+  }
+}
+@keyframes blob-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(40px, -30px, 0) scale(1.12);
+  }
+  100% {
+    transform: translate3d(-30px, 24px, 0) scale(0.96);
+  }
+}
+@keyframes beam-spin {
+  to {
+    --beam-angle: 360deg;
+  }
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 #10b98166;
+  }
+  100% {
+    box-shadow: 0 0 0 10px #10b98100;
+  }
+}
+.star {
+  position: absolute;
+  border-radius: 999px;
+  animation: twinkle ease-in-out infinite;
+}
+.star-light {
+  background: #059669;
+  opacity: 0.35;
+}
+.star-dark {
+  background: #a7f3d0;
+  opacity: 0.5;
+}
+.aurora-blob {
+  position: absolute;
+  z-index: -1;
+  border-radius: 999px;
+  filter: blur(80px);
+  pointer-events: none;
+  animation: blob-drift 18s ease-in-out infinite alternate;
+}
+.float-soft {
+  animation: float-soft 6s ease-in-out infinite;
+}
+.pulse-dot {
+  animation: pulse-ring 1.8s ease-out infinite;
+}
+
+/* Spotlight: la luz sigue al cursor dentro de la tarjeta */
+.spotlight {
+  position: relative;
+}
+.spotlight::before,
+.spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+.spotlight::before {
+  background: radial-gradient(
+    320px circle at var(--mx, 50%) var(--my, 50%),
+    #10b9811f,
+    transparent 70%
+  );
+}
+.spotlight::after {
+  padding: 1px;
+  background: radial-gradient(
+    220px circle at var(--mx, 50%) var(--my, 50%),
+    #059669a6,
+    transparent 70%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.spotlight:hover::before,
+.spotlight:hover::after {
+  opacity: 1;
+}
+.spotlight > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Borde con haz de luz que gira (plan destacado) */
+.beam::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: 2;
+  border-radius: inherit;
+  padding: 2px;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0 62%,
+    #34d399 82%,
+    #2dd4bf 92%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: beam-spin 5s linear infinite;
+}
+
+/* Cinta de rubros */
+.marquee {
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 3rem;
+  animation: marquee 32s linear infinite;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Navegación flotante que se compacta al hacer scroll */
+.site-nav {
+  transition:
+    box-shadow 250ms ease,
+    background-color 250ms ease,
+    border-color 250ms ease;
+}
+.site-nav[data-scrolled="true"] {
+  border-color: #cfe5da;
+  background: #ffffffd9;
+  backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow:
+    0 8px 30px #04785714,
+    inset 0 -8px 24px #d1fae547;
+}
+
+/* Panel oscuro verde para el cierre (contraste, como el canvas de la referencia) */
+.void-panel {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid #0f3d2c;
+  background:
+    radial-gradient(ellipse at 50% 0%, #10b98133, transparent 55%),
+    radial-gradient(ellipse at 50% 120%, #2dd4bf26, transparent 50%), #03140d;
+  box-shadow:
+    inset 0 0 40px #34d3990f,
+    inset 0 -8px 32px #10b9811f;
+}
+.void-panel .landing-heading {
+  color: #ecfdf5;
 }

@@ -1,12 +1,24 @@
 import Link from "next/link";
 import { ArrowLeft, Check, MessageCircle, Sparkles } from "lucide-react";
 import { Brand } from "@/components/brand";
+import { StarField } from "@/components/marketing/motion";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <aside className="relative hidden flex-col overflow-hidden border-r border-emerald-100 bg-[#f4faf6] p-12 text-slate-800 lg:flex xl:p-16">
-        <Brand />
+        <StarField />
+        <div
+          aria-hidden="true"
+          className="aurora-blob -top-20 -left-24 h-80 w-80 bg-emerald-300/40"
+        />
+        <div
+          aria-hidden="true"
+          className="aurora-blob right-0 bottom-10 h-72 w-72 bg-teal-200/50 [animation-delay:-8s]"
+        />
+        <div className="relative z-10">
+          <Brand />
+        </div>
         <div className="relative z-10 my-auto max-w-md py-16">
           <span className="mb-6 inline-flex items-center gap-2 text-base text-primary">
             <Sparkles size={16} /> Un poco más de orden. Mucho más tiempo.
@@ -14,7 +26,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <h2 className="text-5xl leading-[1.15] font-medium tracking-tight">
             Tu negocio crece.
             <br />
-            <span className="text-primary">Tu agenda fluye.</span>
+            <span className="landing-accent-text">Tu agenda fluye.</span>
           </h2>
           <p className="mt-6 text-lg leading-8 text-slate-600">
             Todas tus reservas, tus clientes y tus próximas citas en un mismo espacio.
@@ -31,7 +43,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               </p>
             ))}
           </div>
-          <div className="rim-card mt-12 rounded-2xl p-6">
+          <div className="rim-card float-soft mt-12 rounded-2xl bg-white/80 p-6 backdrop-blur">
             <div className="flex items-center gap-3">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-primary">
                 <MessageCircle size={23} />
