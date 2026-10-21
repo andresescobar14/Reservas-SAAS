@@ -10,7 +10,7 @@ Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, shadcn/ui (Radix)
 
 La aplicación arranca en **modo oscuro** y ofrece un botón (sol/luna) para cambiar a modo claro; la elección se guarda en `localStorage` (`reserva-theme`). El verde es el color principal en botones, enlaces, focus e iconos. La portada adapta la composición de Reflect Notes a superficies blancas, navegación flotante y tarjetas con brillo interior. La sección `/#precios` sigue las dos columnas de la referencia de Unicorn Studio: prueba de **14 días gratis** y **Reserva Pro por $499 MXN al mes**.
 
-Los precios se editan en `lib/pricing.ts` y se reutilizan en `/suscripcion`. Los pagos reales requieren conectar el checkout y su webhook; mostrar un precio no activa cobros. WhatsApp y Google Calendar se identifican como integraciones en preparación.
+Los precios se editan en `lib/pricing.ts` y se reutilizan en `/suscripcion`. Los pagos reales requieren conectar el checkout y su webhook; mostrar un precio no activa cobros. El motor local de WhatsApp ya permite conexión por QR y envío desde una sesión por empresa; la programación automática de recordatorios y Google Calendar siguen pendientes.
 
 La tipografía Inter se sirve localmente. Los párrafos principales tienen 16–20 px y los H2 de la landing, 36–48 px. Consulta `docs/design-system.md` para los tokens y la adaptación de las referencias.
 
@@ -96,7 +96,7 @@ La aplicación muestra un mensaje específico y una referencia para los errores 
 | `/auth/callback`           | Confirmación e intercambio del código de sesión                     |
 | `/dashboard/calendario`    | Agenda semanal/mensual, nueva reserva, detalle y estado             |
 | `/dashboard/clientes`      | Directorio, búsqueda, alta e historial                              |
-| `/dashboard/whatsapp`      | Pantalla base de conexión y vista previa del recordatorio           |
+| `/dashboard/whatsapp`      | Conexión real por QR y estado de WhatsApp por empresa               |
 | `/dashboard/integraciones` | Pantalla base de Google Calendar y webhooks                         |
 | `/dashboard/cuenta`        | Verificación opcional del correo por código, sin bloquear el acceso |
 | `/suscripcion`             | Estado de suscripción y acceso al checkout cuando esté configurado  |
@@ -115,11 +115,11 @@ La aplicación muestra un mensaje específico y una referencia para los errores 
 - Las fechas se almacenan como `timestamptz`; la agenda y los formularios utilizan la zona horaria de la empresa, detectada al registrarse.
 - Los recordatorios se calculan para 24 horas antes. Reprogramar la fecha reinicia `reminder_sent_at`.
 
-## Integraciones pendientes
+## Motor de WhatsApp e integraciones pendientes
 
-Esta entrega construye la **base del producto**. No envía WhatsApp, no genera códigos QR reales, no cobra pagos ni sincroniza Google Calendar.
+El microservicio independiente está en [`whatsapp-engine`](whatsapp-engine/README.md). Las dependencias y su configuración local ya están instaladas. Ejecuta `npm start` dentro de esa carpeta y abre `/dashboard/whatsapp` desde el frontend local para generar y escanear el QR. Valida el JWT de Supabase, la empresa y su suscripción antes de consultar o enviar. La demo pública conserva su vista de ejemplo sin conectar teléfonos reales.
 
-- **WhatsApp:** conectar Evolution API o `whatsapp-web.js` en un servicio persistente separado del frontend. Necesita sesiones por empresa, credenciales privadas y un worker con reintentos e idempotencia. El esquema ya tiene `reminder_due_at` y `reminder_sent_at`.
+- **WhatsApp:** conexión por QR, estados y envío implementados en el motor persistente del puerto 3001. Para producción, alojar ese motor con disco persistente y HTTPS; configurar `NEXT_PUBLIC_WHATSAPP_ENGINE_URL` en Next.js y el origen permitido en el motor. Aún falta el worker con reintentos e idempotencia para recordatorios automáticos. El esquema ya tiene `reminder_due_at` y `reminder_sent_at`.
 - **Pagos:** integrar checkout y webhook firmado. Solo un backend autorizado debe actualizar `companies.subscription_status`. `BILLING_CHECKOUT_URL` permite mostrar una URL HTTPS de checkout alojado cuando exista la integración; definirla por sí sola no activa una suscripción.
 - **Google Calendar y webhooks:** implementar autorización OAuth, almacenamiento seguro de tokens, endpoints autenticados y resolución de duplicados para sincronización bidireccional.
 
