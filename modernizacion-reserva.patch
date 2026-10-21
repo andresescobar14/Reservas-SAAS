@@ -1,0 +1,2297 @@
+From 246254e54f36fe94a929d2d00c2ccb0c61addef9 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 21 Oct 2026 18:53:59 +0000
+Subject: [PATCH] Modernize landing, nav, auth and dashboard with Framer Motion
+ (emerald, Reflect-inspired)
+
+---
+ README.md                                |   2 +-
+ app/(auth)/layout.tsx                    |  18 +-
+ app/globals.css                          | 235 ++++++++++++++-
+ app/layout.tsx                           |   1 -
+ app/page.tsx                             | 117 +++++---
+ components/dashboard/shell.tsx           | 345 ++++++++++++-----------
+ components/landing-motion.tsx            |  26 --
+ components/landing-page.tsx              | 199 -------------
+ components/marketing/motion.tsx          | 132 +++++++++
+ components/marketing/pricing-section.tsx | 164 -----------
+ components/marketing/product-preview.tsx |  51 +++-
+ components/marketing/site-header.tsx     |  89 ++++--
+ package-lock.json                        | 159 -----------
+ package.json                             |   3 -
+ 14 files changed, 746 insertions(+), 795 deletions(-)
+ delete mode 100644 components/landing-motion.tsx
+ delete mode 100644 components/landing-page.tsx
+ create mode 100644 components/marketing/motion.tsx
+ delete mode 100644 components/marketing/pricing-section.tsx
+
+diff --git a/README.md b/README.md
+index 2708eda..c5d60e8 100644
+--- a/README.md
++++ b/README.md
+@@ -4,7 +4,7 @@ Base local de un SaaS B2B para gestionar reservas y clientes, construida según
+ 
+ ## Stack
+ 
+-Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, shadcn/ui (Radix), Lucide, Supabase Auth/PostgreSQL, FullCalendar, Luxon, Sonner, AOS y GSAP. El archivo `package-lock.json` fija las versiones instaladas. La CLI actual de shadcn es `shadcn`, sucesora de `shadcn-ui`.
++Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, shadcn/ui (Radix), Lucide, Supabase Auth/PostgreSQL, FullCalendar, Luxon, Sonner y Framer Motion. El archivo `package-lock.json` fija las versiones instaladas. La CLI actual de shadcn es `shadcn`, sucesora de `shadcn-ui`.
+ 
+ ## Interfaz y precios
+ 
+diff --git a/app/(auth)/layout.tsx b/app/(auth)/layout.tsx
+index 3a4a14f..9289520 100644
+--- a/app/(auth)/layout.tsx
++++ b/app/(auth)/layout.tsx
+@@ -1,12 +1,24 @@
+ import Link from "next/link";
+ import { ArrowLeft, Check, MessageCircle, Sparkles } from "lucide-react";
+ import { Brand } from "@/components/brand";
++import { StarField } from "@/components/marketing/motion";
+ 
+ export default function AuthLayout({ children }: { children: React.ReactNode }) {
+   return (
+     <div className="grid min-h-screen lg:grid-cols-2">
+       <aside className="relative hidden flex-col overflow-hidden border-r border-emerald-100 bg-[#f4faf6] p-12 text-slate-800 lg:flex xl:p-16">
+-        <Brand />
++        <StarField />
++        <div
++          aria-hidden="true"
++          className="aurora-blob -top-20 -left-24 h-80 w-80 bg-emerald-300/40"
++        />
++        <div
++          aria-hidden="true"
++          className="aurora-blob right-0 bottom-10 h-72 w-72 bg-teal-200/50 [animation-delay:-8s]"
++        />
++        <div className="relative z-10">
++          <Brand />
++        </div>
+         <div className="relative z-10 my-auto max-w-md py-16">
+           <span className="mb-6 inline-flex items-center gap-2 text-base text-primary">
+             <Sparkles size={16} /> Un poco más de orden. Mucho más tiempo.
+@@ -14,7 +26,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode })
+           <h2 className="text-5xl leading-[1.15] font-medium tracking-tight">
+             Tu negocio crece.
+             <br />
+-            <span className="text-primary">Tu agenda fluye.</span>
++            <span className="landing-accent-text">Tu agenda fluye.</span>
+           </h2>
+           <p className="mt-6 text-lg leading-8 text-slate-600">
+             Todas tus reservas, tus clientes y tus próximas citas en un mismo espacio.
+@@ -31,7 +43,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode })
+               </p>
+             ))}
+           </div>
+-          <div className="rim-card mt-12 rounded-2xl p-6">
++          <div className="rim-card float-soft mt-12 rounded-2xl bg-white/80 p-6 backdrop-blur">
+             <div className="flex items-center gap-3">
+               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-primary">
+                 <MessageCircle size={23} />
+diff --git a/app/globals.css b/app/globals.css
+index 06316cb..caf0265 100644
+--- a/app/globals.css
++++ b/app/globals.css
+@@ -242,6 +242,23 @@ summary:focus-visible {
+     box-shadow 200ms ease;
+ }
+ .premium-landing .site-nav [data-slot="button"][data-variant="default"]:hover,
++.premium-landing .landing-cta {
++  position: relative;
++  overflow: hidden;
++}
++.premium-landing .landing-cta::after {
++  content: "";
++  position: absolute;
++  inset: 0 auto 0 -60%;
++  width: 40%;
++  transform: skewX(-20deg);
++  background: linear-gradient(90deg, transparent, #ffffff55, transparent);
++  transition: left 600ms ease;
++  pointer-events: none;
++}
++.premium-landing .landing-cta:hover::after {
++  left: 130%;
++}
+ .premium-landing .landing-cta:hover {
+   background-color: var(--primary-hover);
+   color: #ffffff;
+@@ -288,9 +305,11 @@ summary:focus-visible {
+   box-shadow: inset 0 -7px 11px #10b98112;
+ }
+ .landing-accent-text {
+-  background: linear-gradient(100deg, #047857 10%, #059669 55%, #10b981);
++  background: linear-gradient(100deg, #047857 5%, #10b981 40%, #2dd4bf 60%, #047857 95%);
++  background-size: 220% 100%;
+   background-clip: text;
+   -webkit-text-fill-color: transparent;
++  animation: text-shimmer 7s ease-in-out infinite alternate;
+ }
+ .landing-heading {
+   font-size: clamp(2.25rem, 4.5vw, 3.25rem);
+@@ -415,6 +434,14 @@ summary:focus-visible {
+   font-weight: 600;
+ }
+ @media (prefers-reduced-motion: reduce) {
++  .star,
++  .aurora-blob,
++  .landing-accent-text,
++  .beam::before,
++  .marquee-track,
++  .float-soft {
++    animation: none !important;
++  }
+   html {
+     scroll-behavior: auto;
+   }
+@@ -424,10 +451,6 @@ summary:focus-visible {
+     animation-duration: 0.01ms !important;
+     transition-duration: 0.01ms !important;
+   }
+-  [data-aos] {
+-    opacity: 1 !important;
+-    transform: none !important;
+-  }
+   .premium-landing .landing-cta:hover,
+   .premium-landing .landing-secondary:hover,
+   .premium-landing .site-nav [data-slot="button"]:hover,
+@@ -443,3 +466,205 @@ summary:focus-visible {
+     transform: none !important;
+   }
+ }
++
++/* ───────── Modernización: movimiento y luz (referencia Reflect, en verde) ───────── */
++@property --beam-angle {
++  syntax: "<angle>";
++  initial-value: 0deg;
++  inherits: false;
++}
++@keyframes text-shimmer {
++  to {
++    background-position: 100% 0;
++  }
++}
++@keyframes twinkle {
++  0%,
++  100% {
++    opacity: 0.15;
++    transform: scale(0.8);
++  }
++  50% {
++    opacity: 0.9;
++    transform: scale(1.15);
++  }
++}
++@keyframes blob-drift {
++  0% {
++    transform: translate3d(0, 0, 0) scale(1);
++  }
++  50% {
++    transform: translate3d(40px, -30px, 0) scale(1.12);
++  }
++  100% {
++    transform: translate3d(-30px, 24px, 0) scale(0.96);
++  }
++}
++@keyframes beam-spin {
++  to {
++    --beam-angle: 360deg;
++  }
++}
++@keyframes marquee {
++  to {
++    transform: translateX(-50%);
++  }
++}
++@keyframes float-soft {
++  0%,
++  100% {
++    transform: translateY(0);
++  }
++  50% {
++    transform: translateY(-8px);
++  }
++}
++@keyframes pulse-ring {
++  0% {
++    box-shadow: 0 0 0 0 #10b98166;
++  }
++  100% {
++    box-shadow: 0 0 0 10px #10b98100;
++  }
++}
++.star {
++  position: absolute;
++  border-radius: 999px;
++  animation: twinkle ease-in-out infinite;
++}
++.star-light {
++  background: #059669;
++  opacity: 0.35;
++}
++.star-dark {
++  background: #a7f3d0;
++  opacity: 0.5;
++}
++.aurora-blob {
++  position: absolute;
++  z-index: -1;
++  border-radius: 999px;
++  filter: blur(80px);
++  pointer-events: none;
++  animation: blob-drift 18s ease-in-out infinite alternate;
++}
++.float-soft {
++  animation: float-soft 6s ease-in-out infinite;
++}
++.pulse-dot {
++  animation: pulse-ring 1.8s ease-out infinite;
++}
++
++/* Spotlight: la luz sigue al cursor dentro de la tarjeta */
++.spotlight {
++  position: relative;
++}
++.spotlight::before,
++.spotlight::after {
++  content: "";
++  position: absolute;
++  inset: 0;
++  border-radius: inherit;
++  pointer-events: none;
++  opacity: 0;
++  transition: opacity 300ms ease;
++}
++.spotlight::before {
++  background: radial-gradient(
++    320px circle at var(--mx, 50%) var(--my, 50%),
++    #10b9811f,
++    transparent 70%
++  );
++}
++.spotlight::after {
++  padding: 1px;
++  background: radial-gradient(
++    220px circle at var(--mx, 50%) var(--my, 50%),
++    #059669a6,
++    transparent 70%
++  );
++  -webkit-mask:
++    linear-gradient(#000 0 0) content-box,
++    linear-gradient(#000 0 0);
++  -webkit-mask-composite: xor;
++  mask-composite: exclude;
++}
++.spotlight:hover::before,
++.spotlight:hover::after {
++  opacity: 1;
++}
++.spotlight > * {
++  position: relative;
++  z-index: 1;
++}
++
++/* Borde con haz de luz que gira (plan destacado) */
++.beam::before {
++  content: "";
++  position: absolute;
++  inset: -2px;
++  z-index: 2;
++  border-radius: inherit;
++  padding: 2px;
++  pointer-events: none;
++  background: conic-gradient(
++    from var(--beam-angle),
++    transparent 0 62%,
++    #34d399 82%,
++    #2dd4bf 92%,
++    transparent 100%
++  );
++  -webkit-mask:
++    linear-gradient(#000 0 0) content-box,
++    linear-gradient(#000 0 0);
++  -webkit-mask-composite: xor;
++  mask-composite: exclude;
++  animation: beam-spin 5s linear infinite;
++}
++
++/* Cinta de rubros */
++.marquee {
++  overflow: hidden;
++  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
++}
++.marquee-track {
++  display: flex;
++  width: max-content;
++  gap: 3rem;
++  animation: marquee 32s linear infinite;
++}
++.marquee:hover .marquee-track {
++  animation-play-state: paused;
++}
++
++/* Navegación flotante que se compacta al hacer scroll */
++.site-nav {
++  transition:
++    box-shadow 250ms ease,
++    background-color 250ms ease,
++    border-color 250ms ease;
++}
++.site-nav[data-scrolled="true"] {
++  border-color: #cfe5da;
++  background: #ffffffd9;
++  backdrop-filter: blur(16px) saturate(1.4);
++  box-shadow:
++    0 8px 30px #04785714,
++    inset 0 -8px 24px #d1fae547;
++}
++
++/* Panel oscuro verde para el cierre (contraste, como el canvas de la referencia) */
++.void-panel {
++  position: relative;
++  isolation: isolate;
++  border: 1px solid #0f3d2c;
++  background:
++    radial-gradient(ellipse at 50% 0%, #10b98133, transparent 55%),
++    radial-gradient(ellipse at 50% 120%, #2dd4bf26, transparent 50%), #03140d;
++  box-shadow:
++    inset 0 0 40px #34d3990f,
++    inset 0 -8px 32px #10b9811f;
++}
++.void-panel .landing-heading {
++  color: #ecfdf5;
++}
+diff --git a/app/layout.tsx b/app/layout.tsx
+index 3d24e42..6a0d2ec 100644
+--- a/app/layout.tsx
++++ b/app/layout.tsx
+@@ -1,7 +1,6 @@
+ import type { Metadata } from "next";
+ import { Toaster } from "@/components/ui/sonner";
+ import "@fontsource-variable/inter";
+-import "aos/dist/aos.css";
+ import "./globals.css";
+ 
+ export const metadata: Metadata = {
+diff --git a/app/page.tsx b/app/page.tsx
+index 39ee333..276fdbf 100644
+--- a/app/page.tsx
++++ b/app/page.tsx
+@@ -1,7 +1,7 @@
+ "use client";
+ 
+ import Link from "next/link";
+-import { MotionConfig, motion, type Variants } from "framer-motion";
++import { MotionConfig, motion } from "framer-motion";
+ import {
+   ArrowRight,
+   ArrowUpRight,
+@@ -17,20 +17,19 @@ import {
+ } from "lucide-react";
+ import { Brand } from "@/components/brand";
+ import { ProductPreview } from "@/components/marketing/product-preview";
++import {
++  ScrollProgress,
++  ScrollTilt,
++  SpotlightCard,
++  StarField,
++  fadeUp,
++  revealViewport,
++  stagger,
++} from "@/components/marketing/motion";
+ import { SiteHeader } from "@/components/marketing/site-header";
+ import { Button } from "@/components/ui/button";
+ import { monthlyFeatures, pricing, trialFeatures } from "@/lib/pricing";
+ 
+-const fadeUp: Variants = {
+-  hidden: { opacity: 0, y: 24 },
+-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+-};
+-const stagger: Variants = {
+-  hidden: {},
+-  visible: { transition: { staggerChildren: 0.12 } },
+-};
+-const revealViewport = { once: true, amount: 0.15 } as const;
+-
+ const features = [
+   {
+     Icon: CalendarDays,
+@@ -58,6 +57,16 @@ const features = [
+   },
+ ];
+ 
++const industries = [
++  "Clínicas",
++  "Barberías",
++  "Spas",
++  "Talleres",
++  "Consultorías",
++  "Canchas deportivas",
++  "Profesionales independientes",
++];
++
+ const steps = [
+   {
+     number: "01",
+@@ -99,6 +108,7 @@ export default function HomePage() {
+         <a href="#contenido" className="landing-skip-link">
+           Ir al contenido
+         </a>
++        <ScrollProgress />
+         <SiteHeader />
+         <main id="contenido">
+           <section
+@@ -106,6 +116,15 @@ export default function HomePage() {
+             className="premium-hero relative px-5 pt-24 pb-24 text-center sm:px-8 lg:pt-28 lg:pb-32"
+           >
+             <div aria-hidden="true" className="landing-constellation" />
++            <StarField />
++            <div
++              aria-hidden="true"
++              className="aurora-blob top-10 left-[8%] h-72 w-72 bg-emerald-300/40"
++            />
++            <div
++              aria-hidden="true"
++              className="aurora-blob top-52 right-[6%] h-80 w-80 bg-teal-200/50 [animation-delay:-6s]"
++            />
+             <div className="relative mx-auto max-w-[1200px]">
+               <motion.div
+                 initial={{ opacity: 0, y: 12 }}
+@@ -118,8 +137,8 @@ export default function HomePage() {
+               </motion.div>
+               <motion.h1
+                 id="hero-title"
+-                initial={{ opacity: 0, y: 20 }}
+-                animate={{ opacity: 1, y: 0 }}
++                initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
++                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                 transition={{ duration: 0.6 }}
+                 className="mx-auto mt-7 max-w-4xl text-[clamp(2.75rem,6vw,4.5rem)] leading-[1.11] font-medium tracking-[-0.04em] text-slate-900"
+               >
+@@ -168,25 +187,32 @@ export default function HomePage() {
+                 initial={{ opacity: 0, y: 32 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 transition={{ duration: 0.8, delay: 0.3 }}
+-                className="landing-preview-frame relative mx-auto mt-16 max-w-[1100px] rounded-2xl p-2 sm:mt-20 sm:p-3"
++                className="mx-auto mt-16 max-w-[1100px] sm:mt-20"
+               >
+-                <ProductPreview />
++                <ScrollTilt>
++                  <div className="landing-preview-frame relative rounded-2xl p-2 shadow-2xl shadow-emerald-900/10 sm:p-3">
++                    <ProductPreview />
++                  </div>
++                </ScrollTilt>
+               </motion.div>
+               <div className="mx-auto mt-14 max-w-4xl">
+                 <p className="text-xs font-medium tracking-[0.14em] text-slate-500">
+                   HECHO PARA TU NEGOCIO
+                 </p>
+-                <ul className="mt-5 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-base text-slate-600 sm:gap-x-10">
+-                  {[
+-                    "Clínicas",
+-                    "Barberías",
+-                    "Spas",
+-                    "Talleres",
+-                    "Profesionales independientes",
+-                  ].map((industry) => (
+-                    <li key={industry}>{industry}</li>
+-                  ))}
+-                </ul>
++                <div className="marquee mt-5">
++                  <ul className="marquee-track text-base text-slate-600">
++                    {[...industries, ...industries].map((industry, index) => (
++                      <li
++                        key={`${industry}-${index}`}
++                        aria-hidden={index >= industries.length ? true : undefined}
++                        className="flex items-center gap-12 whitespace-nowrap"
++                      >
++                        {industry}
++                        <span className="size-1 rounded-full bg-emerald-400" aria-hidden="true" />
++                      </li>
++                    ))}
++                  </ul>
++                </div>
+               </div>
+             </div>
+           </section>
+@@ -223,12 +249,11 @@ export default function HomePage() {
+               className="mt-14 grid gap-4 sm:grid-cols-2 lg:mt-16 lg:grid-cols-4"
+             >
+               {features.map(({ Icon, title, text, label }) => (
+-                <motion.article
++                <SpotlightCard
+                   key={title}
+-                  variants={fadeUp}
+                   className="landing-feature group flex flex-col rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
+                 >
+-                  <div className="mb-7 flex size-12 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600">
++                  <div className="mb-7 flex size-12 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 group-hover:bg-primary group-hover:text-white">
+                     <Icon size={25} strokeWidth={1.5} aria-hidden="true" />
+                   </div>
+                   <h3 className="text-xl leading-7 font-medium tracking-[-0.02em] text-slate-900">
+@@ -236,7 +261,7 @@ export default function HomePage() {
+                   </h3>
+                   <p className="mt-4 text-base leading-7 text-slate-600">{text}</p>
+                   <p className="mt-auto pt-7 text-sm font-medium text-emerald-800">{label}</p>
+-                </motion.article>
++                </SpotlightCard>
+               ))}
+             </motion.div>
+           </section>
+@@ -263,7 +288,7 @@ export default function HomePage() {
+                 Empieza con lo que ya conoces. Nosotros ponemos el espacio para organizarlo.
+               </p>
+             </motion.div>
+-            <motion.ol
++            <motion.div
+               variants={stagger}
+               initial="hidden"
+               whileInView="visible"
+@@ -271,18 +296,20 @@ export default function HomePage() {
+               className="mt-14 grid gap-6 md:grid-cols-3 lg:mt-16"
+             >
+               {steps.map(({ number, title, text }) => (
+-                <motion.li key={number} variants={fadeUp} className="landing-step relative p-8">
+-                  <span className="text-5xl leading-none font-medium tracking-tight text-emerald-700/35">
++                <SpotlightCard
++                  key={number}
++                  className="group rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
++                >
++                  <span className="flex size-12 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-base font-medium text-emerald-700 transition-colors duration-300 group-hover:bg-primary group-hover:text-white">
+                     {number}
+-                    <span className="text-primary">.</span>
+                   </span>
+                   <h3 className="mt-7 text-xl font-medium tracking-[-0.02em] text-slate-900">
+                     {title}
+                   </h3>
+                   <p className="mt-4 text-base leading-7 text-slate-600">{text}</p>
+-                </motion.li>
++                </SpotlightCard>
+               ))}
+-            </motion.ol>
++            </motion.div>
+           </section>
+ 
+           <section
+@@ -366,7 +393,7 @@ export default function HomePage() {
+                 <motion.article
+                   variants={fadeUp}
+                   aria-labelledby="monthly-plan-title"
+-                  className="landing-pro relative flex flex-col rounded-2xl border-2 border-primary bg-white p-8 pt-10 md:min-h-[606px] md:py-12"
++                  className="landing-pro beam relative flex flex-col rounded-2xl border-2 border-primary bg-white p-8 pt-10 md:min-h-[606px] md:py-12"
+                 >
+                   <span className="absolute -top-4 left-1/2 inline-flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-[32px] bg-primary px-4 py-1.5 text-sm font-medium text-white">
+                     <Sparkles size={14} strokeWidth={1.5} aria-hidden="true" />
+@@ -463,28 +490,32 @@ export default function HomePage() {
+               initial="hidden"
+               whileInView="visible"
+               viewport={revealViewport}
+-              className="landing-closing relative mx-auto max-w-[1136px] overflow-hidden rounded-2xl border border-emerald-200 bg-white px-6 py-20 sm:px-12 sm:py-24"
++              className="void-panel relative mx-auto max-w-[1136px] overflow-hidden rounded-2xl px-6 py-20 sm:px-12 sm:py-24"
+             >
++              <StarField tone="dark" />
+               <div aria-hidden="true" className="aurora-divider absolute inset-x-0 top-0" />
+               <Sparkles
+                 size={27}
+                 strokeWidth={1.5}
+-                className="mx-auto text-emerald-600"
++                className="float-soft relative mx-auto text-emerald-300"
+                 aria-hidden="true"
+               />
+-              <h2 id="closing-title" className="landing-heading mx-auto mt-7 max-w-2xl">
++              <h2 id="closing-title" className="landing-heading relative mx-auto mt-7 max-w-2xl">
+                 Haz espacio para lo que viene.
+               </h2>
+-              <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-slate-600">
++              <p className="relative mx-auto mt-6 max-w-xl text-lg leading-8 text-emerald-100/80">
+                 Empieza con una agenda más simple. Tu negocio y tu tiempo lo van a agradecer.
+               </p>
+-              <Button asChild className="landing-cta mt-9 h-12 px-6 text-base">
++              <Button
++                asChild
++                className="landing-cta relative mt-9 h-12 px-6 text-base shadow-[0_0_40px_#10b98166]"
++              >
+                 <Link href="/register">
+                   Crear mi espacio gratis
+                   <ArrowUpRight size={18} aria-hidden="true" />
+                 </Link>
+               </Button>
+-              <p className="mt-4 text-base text-slate-600">
++              <p className="relative mt-4 text-base text-emerald-100/70">
+                 {pricing.trialDays} días para descubrir otra forma de organizarte.
+               </p>
+             </motion.div>
+diff --git a/components/dashboard/shell.tsx b/components/dashboard/shell.tsx
+index 5ddb0ad..65c880e 100644
+--- a/components/dashboard/shell.tsx
++++ b/components/dashboard/shell.tsx
+@@ -3,6 +3,7 @@
+ import Link from "next/link";
+ import { usePathname } from "next/navigation";
+ import { useState } from "react";
++import { MotionConfig, motion } from "framer-motion";
+ import {
+   ArrowUpRight,
+   CalendarDays,
+@@ -52,189 +53,205 @@ export function DashboardShell({
+     selected === "cuenta" ? "Mi cuenta" : navigation.find((item) => item.id === selected)?.title;
+ 
+   return (
+-    <div className="min-h-screen bg-slate-50">
+-      {menuOpen && (
+-        <button
+-          className="fixed inset-0 z-30 bg-slate-950/30 lg:hidden"
+-          aria-label="Cerrar menú"
+-          onClick={() => setMenuOpen(false)}
+-        />
+-      )}
+-      <aside
+-        className={cn(
+-          "fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-y-auto border-r border-slate-200/80 bg-white px-4 py-7 transition-transform lg:translate-x-0",
+-          menuOpen ? "translate-x-0" : "-translate-x-full",
+-        )}
+-      >
+-        <div className="flex items-center justify-between px-3">
+-          <Brand />
++    <MotionConfig reducedMotion="user">
++      <div className="min-h-screen bg-slate-50">
++        {menuOpen && (
+           <button
+-            className="text-slate-400 lg:hidden"
++            className="fixed inset-0 z-30 bg-slate-950/30 lg:hidden"
+             aria-label="Cerrar menú"
+             onClick={() => setMenuOpen(false)}
+-          >
+-            <X size={18} />
+-          </button>
+-        </div>
+-        <div className="mt-9 flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+-          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-xs font-medium text-emerald-800">
+-            {company.name.slice(0, 2).toUpperCase()}
+-          </span>
+-          <div className="min-w-0">
+-            <p className="truncate text-sm font-medium">{company.name}</p>
+-            <p className="mt-0.5 text-xs text-slate-400">Espacio de trabajo</p>
+-          </div>
+-          <ChevronsUpDown size={13} className="ml-auto shrink-0 text-slate-400" />
+-        </div>
+-        <p className="mt-8 mb-3 px-3 text-xs font-medium tracking-widest text-slate-400">
+-          TU NEGOCIO
+-        </p>
+-        <nav aria-label="Menú del dashboard" className="space-y-1">
+-          {navigation.map(({ id, title: label, icon: Icon }) => {
+-            const className = cn(
+-              "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+-              selected === id
+-                ? "bg-emerald-50 text-emerald-800"
+-                : "text-slate-500 hover:bg-slate-50 hover:text-slate-800",
+-            );
+-            const content = (
+-              <>
+-                <Icon size={18} strokeWidth={1.8} />
+-                {label}
+-                {id === "whatsapp" && (
+-                  <span className="ml-auto size-1.5 rounded-full bg-slate-300" />
+-                )}
+-              </>
+-            );
+-            return demo ? (
+-              <button
+-                key={id}
+-                className={className}
+-                aria-current={selected === id ? "page" : undefined}
+-                onClick={() => {
+-                  onNavigate?.(id);
+-                  setMenuOpen(false);
+-                }}
+-              >
+-                {content}
+-              </button>
+-            ) : (
+-              <Link
+-                key={id}
+-                href={`/dashboard/${id}`}
+-                className={className}
+-                aria-current={selected === id ? "page" : undefined}
+-                onClick={() => setMenuOpen(false)}
+-              >
+-                {content}
+-              </Link>
+-            );
+-          })}
+-        </nav>
+-        <div className="mt-auto pt-10">
+-          {company.subscription_status === "trial" && (
+-            <div className="rounded-xl border border-emerald-100 bg-[#f5faf6] p-4">
+-              <div className="flex items-center gap-2 text-xs font-medium text-emerald-900">
+-                <Sparkles size={15} />
+-                Tu espacio está creciendo
+-              </div>
+-              <p className="mt-2 text-xs leading-5 text-slate-500">
+-                Tienes {days} días para explorar todas las posibilidades.
+-              </p>
+-              <Link
+-                href={demo ? "/register" : "/suscripcion"}
+-                className="mt-3 inline-flex items-center gap-2 text-xs font-medium text-emerald-800"
+-              >
+-                {demo ? "Crear mi cuenta" : "Ver mi suscripción"}
+-                <ArrowUpRight size={12} />
+-              </Link>
+-            </div>
+-          )}
+-          <Link
+-            href="/#como-funciona"
+-            className="mt-5 flex items-center gap-3 px-3 py-2 text-xs text-slate-400"
+-          >
+-            <CircleHelp size={16} />
+-            Conoce Reserva
+-          </Link>
+-          {!demo && (
+-            <form action={signOut}>
+-              <button className="flex items-center gap-3 px-3 py-2 text-xs text-slate-400 hover:text-slate-700">
+-                <LogOut size={15} />
+-                Cerrar sesión
+-              </button>
+-            </form>
++          />
++        )}
++        <aside
++          className={cn(
++            "fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-y-auto border-r border-slate-200/80 bg-white px-4 py-7 transition-transform lg:translate-x-0",
++            menuOpen ? "translate-x-0" : "-translate-x-full",
+           )}
+-          <div className="mt-4 flex items-center gap-3 border-t border-slate-100 px-2 pt-5">
+-            <span className="flex size-8 items-center justify-center rounded-full bg-slate-100 text-xs font-medium text-slate-600">
+-              {company.name.slice(0, 1).toUpperCase()}
++        >
++          <div className="flex items-center justify-between px-3">
++            <Brand />
++            <button
++              className="text-slate-400 lg:hidden"
++              aria-label="Cerrar menú"
++              onClick={() => setMenuOpen(false)}
++            >
++              <X size={18} />
++            </button>
++          </div>
++          <div className="mt-9 flex items-center gap-3 rounded-lg border border-slate-200 p-3">
++            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-xs font-medium text-emerald-800">
++              {company.name.slice(0, 2).toUpperCase()}
+             </span>
+-            <div>
+-              {demo ? (
++            <div className="min-w-0">
++              <p className="truncate text-sm font-medium">{company.name}</p>
++              <p className="mt-0.5 text-xs text-slate-400">Espacio de trabajo</p>
++            </div>
++            <ChevronsUpDown size={13} className="ml-auto shrink-0 text-slate-400" />
++          </div>
++          <p className="mt-8 mb-3 px-3 text-xs font-medium tracking-widest text-slate-400">
++            TU NEGOCIO
++          </p>
++          <nav aria-label="Menú del dashboard" className="space-y-1">
++            {navigation.map(({ id, title: label, icon: Icon }) => {
++              const className = cn(
++                "relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
++                selected === id
++                  ? "text-emerald-800"
++                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-800",
++              );
++              const content = (
++                <>
++                  {selected === id && (
++                    <motion.span
++                      layoutId="dashboard-nav-active"
++                      className="absolute inset-0 rounded-lg bg-emerald-50 shadow-[inset_0_0_0_1px_#a7f3d055]"
++                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
++                    />
++                  )}
++                  <Icon size={18} strokeWidth={1.8} className="relative" />
++                  <span className="relative">{label}</span>
++                  {id === "whatsapp" && (
++                    <span className="relative ml-auto size-1.5 rounded-full bg-slate-300" />
++                  )}
++                </>
++              );
++              return demo ? (
+                 <button
+-                  className="text-xs font-medium hover:text-emerald-700"
++                  key={id}
++                  className={className}
++                  aria-current={selected === id ? "page" : undefined}
+                   onClick={() => {
+-                    onNavigate?.("cuenta");
++                    onNavigate?.(id);
+                     setMenuOpen(false);
+                   }}
+                 >
+-                  Cuenta de ejemplo
++                  {content}
+                 </button>
+               ) : (
+                 <Link
+-                  href="/dashboard/cuenta"
+-                  className="text-xs font-medium hover:text-emerald-700"
++                  key={id}
++                  href={`/dashboard/${id}`}
++                  className={className}
++                  aria-current={selected === id ? "page" : undefined}
+                   onClick={() => setMenuOpen(false)}
+                 >
+-                  Mi cuenta
++                  {content}
+                 </Link>
+-              )}
+-              <p className="mt-0.5 text-xs text-slate-400">Administrador</p>
+-            </div>
+-          </div>
+-        </div>
+-      </aside>
+-      <div className="lg:pl-60">
+-        <header className="flex h-[73px] items-center justify-between border-b border-slate-200/70 bg-white px-5 sm:px-8">
+-          <div className="flex items-center gap-3 text-xs">
+-            <button
+-              aria-label="Abrir menú"
+-              className="text-slate-400 lg:hidden"
+-              onClick={() => setMenuOpen(true)}
++              );
++            })}
++          </nav>
++          <div className="mt-auto pt-10">
++            {company.subscription_status === "trial" && (
++              <div className="rounded-xl border border-emerald-100 bg-[#f5faf6] p-4">
++                <div className="flex items-center gap-2 text-xs font-medium text-emerald-900">
++                  <Sparkles size={15} />
++                  Tu espacio está creciendo
++                </div>
++                <p className="mt-2 text-xs leading-5 text-slate-500">
++                  Tienes {days} días para explorar todas las posibilidades.
++                </p>
++                <Link
++                  href={demo ? "/register" : "/suscripcion"}
++                  className="mt-3 inline-flex items-center gap-2 text-xs font-medium text-emerald-800"
++                >
++                  {demo ? "Crear mi cuenta" : "Ver mi suscripción"}
++                  <ArrowUpRight size={12} />
++                </Link>
++              </div>
++            )}
++            <Link
++              href="/#como-funciona"
++              className="mt-5 flex items-center gap-3 px-3 py-2 text-xs text-slate-400"
+             >
+-              <Menu size={20} />
+-            </button>
+-            <LayoutGrid size={15} className="hidden text-slate-400 sm:block" />
+-            <span className="hidden text-slate-400 sm:block">Mi espacio</span>
+-            <span className="hidden text-slate-300 sm:block">/</span>
+-            <span className="font-medium text-slate-600">{title}</span>
+-          </div>
+-          <div className="flex items-center gap-3">
+-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-medium text-emerald-700">
+-              <span className="size-1.5 rounded-full bg-emerald-500" />
+-              {demo
+-                ? "Modo demo"
+-                : company.subscription_status === "trial"
+-                  ? "Prueba gratuita"
+-                  : "Plan activo"}
+-            </span>
+-            <span className="flex size-8 items-center justify-center rounded-full border border-slate-200 text-xs font-medium text-slate-500">
+-              {company.name.slice(0, 1).toUpperCase()}
+-            </span>
+-          </div>
+-        </header>
+-        {demo && (
+-          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-amber-100 bg-amber-50 px-4 py-2.5 text-[11px] text-amber-900">
+-            <span>Demo con datos de ejemplo. Los cambios duran hasta recargar la página.</span>
+-            <Link href="/register" className="font-medium underline underline-offset-2">
+-              Crear mi espacio
++              <CircleHelp size={16} />
++              Conoce Reserva
+             </Link>
++            {!demo && (
++              <form action={signOut}>
++                <button className="flex items-center gap-3 px-3 py-2 text-xs text-slate-400 hover:text-slate-700">
++                  <LogOut size={15} />
++                  Cerrar sesión
++                </button>
++              </form>
++            )}
++            <div className="mt-4 flex items-center gap-3 border-t border-slate-100 px-2 pt-5">
++              <span className="flex size-8 items-center justify-center rounded-full bg-slate-100 text-xs font-medium text-slate-600">
++                {company.name.slice(0, 1).toUpperCase()}
++              </span>
++              <div>
++                {demo ? (
++                  <button
++                    className="text-xs font-medium hover:text-emerald-700"
++                    onClick={() => {
++                      onNavigate?.("cuenta");
++                      setMenuOpen(false);
++                    }}
++                  >
++                    Cuenta de ejemplo
++                  </button>
++                ) : (
++                  <Link
++                    href="/dashboard/cuenta"
++                    className="text-xs font-medium hover:text-emerald-700"
++                    onClick={() => setMenuOpen(false)}
++                  >
++                    Mi cuenta
++                  </Link>
++                )}
++                <p className="mt-0.5 text-xs text-slate-400">Administrador</p>
++              </div>
++            </div>
+           </div>
+-        )}
+-        <main id="contenido" className="mx-auto max-w-[1500px] p-5 sm:p-8">
+-          {children}
+-        </main>
++        </aside>
++        <div className="lg:pl-60">
++          <header className="sticky top-0 z-20 flex h-[73px] items-center justify-between border-b border-slate-200/70 bg-white/80 px-5 backdrop-blur-md sm:px-8">
++            <div className="flex items-center gap-3 text-xs">
++              <button
++                aria-label="Abrir menú"
++                className="text-slate-400 lg:hidden"
++                onClick={() => setMenuOpen(true)}
++              >
++                <Menu size={20} />
++              </button>
++              <LayoutGrid size={15} className="hidden text-slate-400 sm:block" />
++              <span className="hidden text-slate-400 sm:block">Mi espacio</span>
++              <span className="hidden text-slate-300 sm:block">/</span>
++              <span className="font-medium text-slate-600">{title}</span>
++            </div>
++            <div className="flex items-center gap-3">
++              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-medium text-emerald-700">
++                <span className="pulse-dot size-1.5 rounded-full bg-emerald-500" />
++                {demo
++                  ? "Modo demo"
++                  : company.subscription_status === "trial"
++                    ? "Prueba gratuita"
++                    : "Plan activo"}
++              </span>
++              <span className="flex size-8 items-center justify-center rounded-full border border-slate-200 text-xs font-medium text-slate-500">
++                {company.name.slice(0, 1).toUpperCase()}
++              </span>
++            </div>
++          </header>
++          {demo && (
++            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-amber-100 bg-amber-50 px-4 py-2.5 text-[11px] text-amber-900">
++              <span>Demo con datos de ejemplo. Los cambios duran hasta recargar la página.</span>
++              <Link href="/register" className="font-medium underline underline-offset-2">
++                Crear mi espacio
++              </Link>
++            </div>
++          )}
++          <main id="contenido" className="mx-auto max-w-[1500px] p-5 sm:p-8">
++            <motion.div
++              key={selected}
++              initial={{ opacity: 0, y: 10 }}
++              animate={{ opacity: 1, y: 0 }}
++              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
++            >
++              {children}
++            </motion.div>
++          </main>
++        </div>
+       </div>
+-    </div>
++    </MotionConfig>
+   );
+ }
+diff --git a/components/landing-motion.tsx b/components/landing-motion.tsx
+deleted file mode 100644
+index cacde51..0000000
+--- a/components/landing-motion.tsx
++++ /dev/null
+@@ -1,26 +0,0 @@
+-"use client";
+-
+-import { useEffect } from "react";
+-import { gsap } from "gsap";
+-
+-export function LandingMotion() {
+-  useEffect(() => {
+-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+-    const context = gsap.context(() =>
+-      gsap.fromTo(
+-        ".hero-reveal",
+-        { y: 18, opacity: 0 },
+-        { y: 0, opacity: 1, duration: 0.65, stagger: 0.09, ease: "power2.out" },
+-      ),
+-    );
+-    let disposed = false;
+-    void import("aos").then(({ default: AOS }) => {
+-      if (!disposed) AOS.init({ duration: 550, once: true, offset: 45 });
+-    });
+-    return () => {
+-      disposed = true;
+-      context.revert();
+-    };
+-  }, []);
+-  return null;
+-}
+diff --git a/components/landing-page.tsx b/components/landing-page.tsx
+deleted file mode 100644
+index beab1d8..0000000
+--- a/components/landing-page.tsx
++++ /dev/null
+@@ -1,199 +0,0 @@
+-import Link from "next/link";
+-import {
+-  ArrowRight,
+-  ArrowUpRight,
+-  CalendarDays,
+-  Check,
+-  MessageCircle,
+-  ShieldCheck,
+-  Sparkles,
+-  Users,
+-} from "lucide-react";
+-import { Brand } from "@/components/brand";
+-import { Button } from "@/components/ui/button";
+-import { LandingMotion } from "@/components/landing-motion";
+-import { SiteHeader } from "@/components/marketing/site-header";
+-import { ProductPreview } from "@/components/marketing/product-preview";
+-import { PricingSection } from "@/components/marketing/pricing-section";
+-
+-const features = [
+-  {
+-    Icon: CalendarDays,
+-    title: "Cada cita, en su lugar",
+-    text: "Mira tu semana o tu mes. Crea y organiza reservas sin perderte entre conversaciones.",
+-  },
+-  {
+-    Icon: Users,
+-    title: "Conoce a quien vuelve",
+-    text: "Encuentra los datos y el historial de tus clientes. Dale continuidad a cada visita.",
+-  },
+-  {
+-    Icon: ShieldCheck,
+-    title: "Un espacio solo tuyo",
+-    text: "Tu negocio tiene su propia agenda. Las reservas y los clientes permanecen en tu espacio.",
+-  },
+-  {
+-    Icon: MessageCircle,
+-    title: "El próximo paso: WhatsApp",
+-    text: "Preparamos la conexión de recordatorios para acompañar tus citas. Próximamente.",
+-  },
+-];
+-
+-export function LandingPage() {
+-  return (
+-    <main className="marketing-page overflow-hidden bg-white">
+-      <LandingMotion />
+-      <SiteHeader />
+-      <section className="hero-surface relative px-5 pt-20 pb-16 text-center sm:px-8 lg:pt-24 lg:pb-24">
+-        <div className="relative mx-auto max-w-[1200px]">
+-          <div className="hero-reveal inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm text-emerald-800 shadow-[inset_0_-5px_12px_#d1fae570]">
+-            <Sparkles size={15} strokeWidth={1.5} />
+-            Más orden. Más tiempo para ti.
+-          </div>
+-          <h1 className="hero-reveal mx-auto mt-7 max-w-4xl text-[clamp(2.75rem,6vw,4.5rem)] leading-[1.1] font-medium tracking-[-0.035em] text-slate-900">
+-            Tu agenda en orden.
+-            <br />
+-            <span className="brand-text">Tu tiempo de vuelta.</span>
+-          </h1>
+-          <p className="hero-reveal mx-auto mt-6 max-w-[590px] text-lg leading-8 text-slate-600 sm:text-xl sm:leading-9">
+-            Reservas, clientes y próximas citas en un solo espacio. Para que te concentres en lo que
+-            mejor haces.
+-          </p>
+-          <div className="hero-reveal mt-8 flex flex-wrap items-center justify-center gap-3">
+-            <Button asChild className="h-12 px-6 text-base">
+-              <Link href="/register">
+-                Prueba 14 días gratis
+-                <ArrowUpRight size={17} />
+-              </Link>
+-            </Button>
+-            <Button
+-              asChild
+-              variant="outline"
+-              className="h-12 border-slate-200 bg-white px-6 text-base text-slate-700"
+-            >
+-              <Link href="/demo">
+-                Explorar la demo
+-                <ArrowRight size={17} />
+-              </Link>
+-            </Button>
+-          </div>
+-          <p className="hero-reveal mt-5 flex items-center justify-center gap-2 text-base text-slate-500">
+-            <Check size={15} strokeWidth={1.5} className="text-primary" />
+-            Sin tarjeta de crédito. A tu ritmo.
+-          </p>
+-          <div className="hero-reveal relative mx-auto mt-14 max-w-[1100px] sm:mt-16">
+-            <ProductPreview />
+-          </div>
+-          <div className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-slate-500">
+-            <span className="text-xs tracking-[.12em] text-slate-400">HECHO PARA TU NEGOCIO</span>
+-            {["Clínicas", "Barberías", "Spas", "Profesionales independientes"].map((industry) => (
+-              <span key={industry}>{industry}</span>
+-            ))}
+-          </div>
+-        </div>
+-      </section>
+-      <section
+-        id="funcionalidades"
+-        className="relative mx-auto max-w-[1200px] scroll-mt-10 px-5 py-20 sm:px-8 lg:py-24"
+-      >
+-        <div className="aurora-divider absolute inset-x-8 top-0" aria-hidden="true" />
+-        <div data-aos="fade-up" className="mx-auto max-w-2xl text-center">
+-          <p className="eyebrow">MENOS PESTAÑAS. MÁS CLARIDAD.</p>
+-          <h2 className="section-heading mt-4">
+-            Todo lo esencial.
+-            <br />
+-            Justo donde lo necesitas.
+-          </h2>
+-          <p className="mt-6 text-lg leading-8 text-slate-600">
+-            Una forma tranquila de llevar el ritmo de tu negocio, desde la primera cita hasta la
+-            próxima visita.
+-          </p>
+-        </div>
+-        <div className="mt-14 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+-          {features.map(({ Icon, title, text }) => (
+-            <article key={title} data-aos="fade-up" className="px-1">
+-              <Icon size={26} strokeWidth={1.5} className="mb-5 text-primary" />
+-              <h3 className="text-xl leading-7 font-medium text-slate-800">{title}</h3>
+-              <p className="mt-3 text-base leading-7 text-slate-600">{text}</p>
+-            </article>
+-          ))}
+-        </div>
+-      </section>
+-      <section
+-        id="como-funciona"
+-        className="mx-auto max-w-[1200px] scroll-mt-10 px-5 py-20 sm:px-8 lg:py-24"
+-      >
+-        <div data-aos="fade-up" className="mx-auto max-w-2xl text-center">
+-          <p className="eyebrow">UN COMIENZO SENCILLO</p>
+-          <h2 className="section-heading mt-4">
+-            Del primer clic
+-            <br />a tu próxima cita.
+-          </h2>
+-          <p className="mt-6 text-lg leading-8 text-slate-600">
+-            Empieza con lo que ya conoces. Nosotros ponemos el espacio para organizarlo.
+-          </p>
+-        </div>
+-        <div className="mt-12 grid gap-5 md:grid-cols-3">
+-          {[
+-            {
+-              number: "01",
+-              title: "Crea tu espacio",
+-              text: "Registra tu negocio y empieza tu prueba gratuita de 14 días, sin tarjeta.",
+-            },
+-            {
+-              number: "02",
+-              title: "Añade tu primera cita",
+-              text: "Elige la fecha, registra al cliente y guarda el servicio que necesita.",
+-            },
+-            {
+-              number: "03",
+-              title: "Disfruta de una agenda clara",
+-              text: "Consulta las próximas visitas y encuentra el historial de tus clientes en segundos.",
+-            },
+-          ].map(({ number, title, text }) => (
+-            <article key={number} data-aos="fade-up" className="rim-card rounded-2xl p-7 sm:p-8">
+-              <span className="text-sm text-primary">{number} /</span>
+-              <h3 className="mt-6 text-xl font-medium text-slate-800">{title}</h3>
+-              <p className="mt-3 text-base leading-7 text-slate-600">{text}</p>
+-            </article>
+-          ))}
+-        </div>
+-      </section>
+-      <PricingSection />
+-      <section className="px-5 py-24 text-center sm:px-8">
+-        <div
+-          data-aos="fade-up"
+-          className="relative mx-auto max-w-[1000px] overflow-hidden rounded-2xl border border-emerald-100 bg-emerald-50/30 px-6 py-16"
+-        >
+-          <div aria-hidden="true" className="aurora-divider absolute inset-x-0 top-0" />
+-          <Sparkles size={25} strokeWidth={1.5} className="mx-auto text-primary" />
+-          <h2 className="section-heading mt-6">Haz espacio para lo que viene.</h2>
+-          <p className="mx-auto mt-5 max-w-xl text-lg leading-8 text-slate-600">
+-            Empieza con una agenda más simple. Tu negocio y tu tiempo lo van a agradecer.
+-          </p>
+-          <Button asChild className="mt-8 h-12 px-6 text-base">
+-            <Link href="/register">
+-              Crear mi espacio gratis
+-              <ArrowUpRight size={17} />
+-            </Link>
+-          </Button>
+-        </div>
+-      </section>
+-      <footer className="border-t border-slate-100 px-5 py-9 sm:px-8">
+-        <div className="mx-auto flex max-w-[1136px] flex-col items-center justify-between gap-6 sm:flex-row">
+-          <Brand />
+-          <p className="text-base text-slate-500">Menos pendientes. Más posibilidades.</p>
+-          <div className="flex gap-6 text-sm text-slate-600">
+-            <a href="#precios" className="hover:text-primary">
+-              Precios
+-            </a>
+-            <Link href="/login" className="hover:text-primary">
+-              Iniciar sesión
+-              <ArrowUpRight size={13} className="ml-1 inline" />
+-            </Link>
+-          </div>
+-        </div>
+-      </footer>
+-    </main>
+-  );
+-}
+diff --git a/components/marketing/motion.tsx b/components/marketing/motion.tsx
+new file mode 100644
+index 0000000..df37563
+--- /dev/null
++++ b/components/marketing/motion.tsx
+@@ -0,0 +1,132 @@
++"use client";
++
++import { useEffect, useRef, type ComponentProps, type ReactNode } from "react";
++import {
++  animate,
++  motion,
++  useInView,
++  useReducedMotion,
++  useScroll,
++  useSpring,
++  useTransform,
++  type Variants,
++} from "framer-motion";
++import { cn } from "@/lib/utils";
++
++export const fadeUp: Variants = {
++  hidden: { opacity: 0, y: 24 },
++  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
++};
++
++export const stagger: Variants = {
++  hidden: {},
++  visible: { transition: { staggerChildren: 0.12 } },
++};
++
++export const revealViewport = { once: true, amount: 0.15 } as const;
++
++/** Barra fina de progreso de lectura en la parte superior. */
++export function ScrollProgress() {
++  const { scrollYProgress } = useScroll();
++  const scaleX = useSpring(scrollYProgress, { stiffness: 140, damping: 28, restDelta: 0.001 });
++  return (
++    <motion.div
++      aria-hidden="true"
++      style={{ scaleX }}
++      className="fixed inset-x-0 top-0 z-50 h-0.5 origin-left bg-gradient-to-r from-emerald-700 via-emerald-500 to-teal-400"
++    />
++  );
++}
++
++/** Tarjeta con luz que sigue al cursor (spotlight) y entrada en cascada. */
++export function SpotlightCard({
++  className,
++  children,
++  ...props
++}: ComponentProps<typeof motion.article>) {
++  return (
++    <motion.article
++      variants={fadeUp}
++      onPointerMove={(event) => {
++        const rect = event.currentTarget.getBoundingClientRect();
++        event.currentTarget.style.setProperty("--mx", `${event.clientX - rect.left}px`);
++        event.currentTarget.style.setProperty("--my", `${event.clientY - rect.top}px`);
++      }}
++      className={cn("spotlight", className)}
++      {...props}
++    >
++      {children}
++    </motion.article>
++  );
++}
++
++/** Contador que sube hasta su valor al entrar en pantalla. */
++export function CountUp({ value, pad = 2 }: { value: number; pad?: number }) {
++  const ref = useRef<HTMLSpanElement>(null);
++  const inView = useInView(ref, { once: true, amount: 0.6 });
++  const reduce = useReducedMotion();
++  useEffect(() => {
++    const node = ref.current;
++    if (!node || !inView || reduce) return;
++    const controls = animate(0, value, {
++      duration: 1.1,
++      ease: "easeOut",
++      onUpdate: (latest) => {
++        node.textContent = String(Math.round(latest)).padStart(pad, "0");
++      },
++    });
++    return () => controls.stop();
++  }, [inView, reduce, value, pad]);
++  return <span ref={ref}>{String(value).padStart(pad, "0")}</span>;
++}
++
++/** El producto "se levanta" al hacer scroll: inclinación 3D que se corrige y escala. */
++export function ScrollTilt({ children, className }: { children: ReactNode; className?: string }) {
++  const ref = useRef<HTMLDivElement>(null);
++  const reduce = useReducedMotion();
++  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "start 0.25"] });
++  const rotateX = useTransform(scrollYProgress, [0, 1], [14, 0]);
++  const scale = useTransform(scrollYProgress, [0, 1], [0.94, 1]);
++  if (reduce) return <div className={className}>{children}</div>;
++  return (
++    <div ref={ref} className={className} style={{ perspective: 1400 }}>
++      <motion.div style={{ rotateX, scale, transformOrigin: "50% 0%" }}>{children}</motion.div>
++    </div>
++  );
++}
++
++// Posiciones deterministas (evita diferencias entre servidor y cliente).
++const stars = Array.from({ length: 46 }, (_, index) => {
++  const seed = (index * 9301 + 49297) % 233280;
++  const a = seed / 233280;
++  const b = ((seed * 7 + 13) % 233280) / 233280;
++  return {
++    left: `${(a * 100).toFixed(2)}%`,
++    top: `${(b * 100).toFixed(2)}%`,
++    size: index % 7 === 0 ? 3 : index % 3 === 0 ? 2 : 1.5,
++    delay: `${((index * 0.37) % 5).toFixed(2)}s`,
++    duration: `${(3 + (index % 5)).toString()}s`,
++  };
++});
++
++/** Campo de estrellas titilantes; `tone` ajusta el contraste para fondos claros u oscuros. */
++export function StarField({ tone = "light" }: { tone?: "light" | "dark" }) {
++  return (
++    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
++      {stars.map((star, index) => (
++        <span
++          key={index}
++          className={cn("star", tone === "dark" ? "star-dark" : "star-light")}
++          style={{
++            left: star.left,
++            top: star.top,
++            width: star.size,
++            height: star.size,
++            animationDelay: star.delay,
++            animationDuration: star.duration,
++          }}
++        />
++      ))}
++    </div>
++  );
++}
+diff --git a/components/marketing/pricing-section.tsx b/components/marketing/pricing-section.tsx
+deleted file mode 100644
+index 69fc596..0000000
+--- a/components/marketing/pricing-section.tsx
++++ /dev/null
+@@ -1,164 +0,0 @@
+-import Link from "next/link";
+-import { ArrowUpRight, Check, CircleCheck, LockKeyhole, Plus } from "lucide-react";
+-import { Button } from "@/components/ui/button";
+-import { monthlyFeatures, pricing, trialFeatures } from "@/lib/pricing";
+-
+-export function PricingSection() {
+-  return (
+-    <section
+-      id="precios"
+-      aria-labelledby="pricing-title"
+-      className="pricing-section relative scroll-mt-8 px-5 py-24 sm:px-8 lg:py-28"
+-    >
+-      <div className="relative mx-auto max-w-[1000px]">
+-        <div className="mx-auto max-w-2xl text-center">
+-          <p className="eyebrow">PRECIOS, SIN COMPLICACIONES</p>
+-          <h2 id="pricing-title" className="section-heading mt-4">
+-            Un pequeño cambio.
+-            <br />
+-            <span className="text-primary">Mucho más tiempo.</span>
+-          </h2>
+-          <p className="mt-6 text-lg leading-8 text-slate-600">
+-            Prueba Reserva durante {pricing.trialDays} días. Descubre una forma más simple de
+-            organizar tu negocio.
+-          </p>
+-        </div>
+-        <div className="mx-auto mt-14 grid max-w-[860px] items-stretch gap-6 md:grid-cols-2 md:gap-10">
+-          <article
+-            aria-labelledby="trial-plan-title"
+-            className="flex flex-col rounded-2xl border border-slate-200/70 bg-white/70 px-7 py-9 sm:px-9 md:mt-6 md:border-transparent md:bg-transparent"
+-          >
+-            <div className="text-center">
+-              <h3 id="trial-plan-title" className="text-xl font-medium text-slate-800">
+-                Prueba gratuita
+-              </h3>
+-              <p className="mt-5 flex items-baseline justify-center gap-1.5">
+-                <span className="text-2xl text-slate-500">$</span>
+-                <span className="text-[64px] leading-none font-medium tracking-tight text-slate-900">
+-                  0
+-                </span>
+-                <span className="text-sm text-slate-500">/ {pricing.trialDays} días</span>
+-              </p>
+-              <p className="mt-4 text-base text-slate-500">
+-                Tu primer paso hacia una mejor agenda.
+-              </p>
+-            </div>
+-            <ul className="mt-8 space-y-4" aria-label="Funciones de la prueba gratuita">
+-              {trialFeatures.map((feature) => (
+-                <li
+-                  key={feature}
+-                  className="flex items-start gap-3 text-base leading-6 text-slate-600"
+-                >
+-                  <Check size={17} strokeWidth={1.5} className="mt-0.5 shrink-0 text-primary" />
+-                  {feature}
+-                </li>
+-              ))}
+-            </ul>
+-            <div className="mt-auto pt-9">
+-              <Button
+-                asChild
+-                variant="outline"
+-                className="h-12 w-full border-emerald-200 bg-white text-primary hover:border-primary hover:bg-emerald-50"
+-              >
+-                <Link href="/register">
+-                  Comenzar prueba gratis
+-                  <ArrowUpRight size={16} />
+-                </Link>
+-              </Button>
+-              <p className="mt-4 text-center text-base text-slate-500">Sin tarjeta de crédito.</p>
+-            </div>
+-          </article>
+-          <article
+-            aria-labelledby="monthly-plan-title"
+-            className="pricing-glow flex flex-col rounded-2xl px-7 py-9 sm:px-9"
+-          >
+-            <div className="relative z-10 flex h-full flex-col">
+-              <div className="text-center">
+-                <span className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-white/80 px-3 py-1 text-xs font-medium text-emerald-800">
+-                  <span className="size-1.5 rounded-full bg-emerald-500" />
+-                  UN PLAN PARA TU NEGOCIO
+-                </span>
+-                <h3 id="monthly-plan-title" className="text-xl font-medium text-slate-800">
+-                  Reserva Pro
+-                </h3>
+-                <p className="mt-5 flex items-baseline justify-center gap-1.5">
+-                  <span className="text-2xl text-slate-500">$</span>
+-                  <span className="text-[64px] leading-none font-medium tracking-tight text-slate-900">
+-                    {pricing.monthlyAmount}
+-                  </span>
+-                  <span className="text-sm text-slate-500">
+-                    {pricing.currency} / {pricing.period}
+-                  </span>
+-                </p>
+-                <p className="mt-4 text-base text-slate-600">
+-                  Para seguir creciendo después de la prueba.
+-                </p>
+-              </div>
+-              <ul className="mt-8 space-y-4" aria-label="Funciones del plan Reserva Pro">
+-                {monthlyFeatures.map((feature) => (
+-                  <li
+-                    key={feature}
+-                    className="flex items-start gap-3 text-base leading-6 text-slate-700"
+-                  >
+-                    <CircleCheck
+-                      size={17}
+-                      strokeWidth={1.5}
+-                      className="mt-0.5 shrink-0 text-primary"
+-                    />
+-                    {feature}
+-                  </li>
+-                ))}
+-              </ul>
+-              <div className="mt-auto pt-9">
+-                <Button asChild className="h-12 w-full">
+-                  <Link href="/register">
+-                    Empezar con {pricing.trialDays} días gratis
+-                    <ArrowUpRight size={16} />
+-                  </Link>
+-                </Button>
+-                <p className="mt-4 text-center text-base text-emerald-800">
+-                  Tú decides si continúas al finalizar.
+-                </p>
+-              </div>
+-            </div>
+-          </article>
+-        </div>
+-        <p className="mx-auto mt-9 flex max-w-xl items-start justify-center gap-2 text-center text-base leading-6 text-slate-500">
+-          <LockKeyhole size={15} strokeWidth={1.5} className="mt-1 shrink-0 text-primary" />
+-          Sin cobros automáticos durante la prueba. Todos los importes están expresados en pesos
+-          mexicanos.
+-        </p>
+-        <div className="mx-auto mt-16 max-w-[800px] border-t border-emerald-900/10 pt-5">
+-          {[
+-            {
+-              question: "¿Necesito una tarjeta para empezar?",
+-              answer:
+-                "No. Crea tu cuenta y disfruta de 14 días gratis. Puedes explorar la agenda y el directorio de clientes sin introducir datos de pago.",
+-            },
+-            {
+-              question: "¿Qué pasa cuando terminan los 14 días?",
+-              answer: `Puedes continuar con Reserva Pro por $${pricing.monthlyAmount} MXN al mes. Si no activas una suscripción, se pausa el acceso a la agenda y tus datos permanecen en tu espacio.`,
+-            },
+-            {
+-              question: "¿Los recordatorios de WhatsApp ya están disponibles?",
+-              answer:
+-                "La conexión de WhatsApp y la sincronización con Google Calendar están en preparación. La agenda visual, las reservas y el directorio de clientes ya están disponibles.",
+-            },
+-          ].map(({ question, answer }) => (
+-            <details key={question} className="group border-b border-emerald-900/10 py-5">
+-              <summary className="flex cursor-pointer list-none items-center justify-between gap-5 text-base font-medium text-slate-700 [&::-webkit-details-marker]:hidden">
+-                {question}
+-                <Plus
+-                  size={18}
+-                  strokeWidth={1.5}
+-                  className="shrink-0 text-primary transition-transform group-open:rotate-45"
+-                />
+-              </summary>
+-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">{answer}</p>
+-            </details>
+-          ))}
+-        </div>
+-      </div>
+-    </section>
+-  );
+-}
+diff --git a/components/marketing/product-preview.tsx b/components/marketing/product-preview.tsx
+index c928a06..f703874 100644
+--- a/components/marketing/product-preview.tsx
++++ b/components/marketing/product-preview.tsx
+@@ -1,4 +1,7 @@
++"use client";
++
+ import Link from "next/link";
++import { motion } from "framer-motion";
+ import {
+   ArrowUpRight,
+   CalendarDays,
+@@ -9,6 +12,13 @@ import {
+   Plug,
+   Users,
+ } from "lucide-react";
++import { CountUp } from "@/components/marketing/motion";
++
++const stats = [
++  { value: 2, label: "Reservas de hoy" },
++  { value: 7, label: "Esta semana" },
++  { value: 6, label: "Clientes" },
++];
+ 
+ const appointments = [
+   { name: "Ana García", service: "Consulta inicial", time: "09:00 – 10:00", offset: 12 },
+@@ -27,7 +37,7 @@ export function ProductPreview() {
+     >
+       <div className="flex items-center justify-between border-b border-slate-200/70 bg-white px-5 py-3 text-xs text-slate-500 sm:px-6">
+         <div className="flex items-center gap-2">
+-          <span className="size-2 rounded-full bg-emerald-500" />
++          <span className="pulse-dot size-2 rounded-full bg-emerald-500" />
+           Tu próximo espacio de trabajo
+         </div>
+         <span className="flex items-center gap-2 text-primary">
+@@ -68,7 +78,7 @@ export function ProductPreview() {
+             Todo listo para tu próxima cita.
+           </div>
+         </aside>
+-        <div className="min-w-0 bg-slate-50/70 p-4 sm:p-6 lg:p-7">
++        <div className="relative min-w-0 bg-slate-50/70 p-4 sm:p-6 lg:p-7">
+           <div className="mb-5 flex items-start justify-between gap-3">
+             <div>
+               <p className="text-xs text-slate-500">UN BUEN DÍA EMPIEZA CON ORDEN</p>
+@@ -81,17 +91,15 @@ export function ProductPreview() {
+             </span>
+           </div>
+           <div className="mb-5 grid grid-cols-3 gap-3">
+-            {[
+-              { value: "02", label: "Reservas de hoy" },
+-              { value: "07", label: "Esta semana" },
+-              { value: "06", label: "Clientes" },
+-            ].map(({ value, label }) => (
++            {stats.map(({ value, label }) => (
+               <div
+                 key={label}
+                 className="rounded-xl border border-slate-200/70 bg-white px-3 py-3 sm:px-4"
+               >
+                 <p className="text-xs text-slate-500">{label}</p>
+-                <p className="mt-1 text-2xl font-medium text-slate-800">{value}</p>
++                <p className="mt-1 text-2xl font-medium text-slate-800">
++                  <CountUp value={value} />
++                </p>
+               </div>
+             ))}
+           </div>
+@@ -123,10 +131,18 @@ export function ProductPreview() {
+                 </div>
+                 <div className="grid h-[235px] grid-cols-3 gap-1.5 bg-[linear-gradient(to_bottom,#edf1ef_1px,transparent_1px)] bg-[size:100%_59px] lg:grid-cols-5">
+                   {appointments.map((appointment, index) => (
+-                    <div
++                    <motion.div
+                       key={appointment.name}
++                      initial={{ opacity: 0, y: 14, scale: 0.94 }}
++                      whileInView={{ opacity: 1, y: 0, scale: 1 }}
++                      viewport={{ once: true, amount: 0.4 }}
++                      transition={{
++                        duration: 0.5,
++                        delay: 0.5 + index * 0.18,
++                        ease: [0.22, 1, 0.36, 1],
++                      }}
+                       style={{ marginTop: appointment.offset }}
+-                      className={`${index > 2 ? "hidden lg:block" : ""} h-[82px] rounded-md border-l-2 border-emerald-500 bg-emerald-50/90 px-2 py-2 text-emerald-900`}
++                      className={`${index > 2 ? "hidden lg:block" : ""} h-[82px] rounded-md border-l-2 border-emerald-500 bg-emerald-50/90 px-2 py-2 text-emerald-900 transition-shadow hover:shadow-md`}
+                     >
+                       <p className="truncate text-xs font-medium">{appointment.name}</p>
+                       <p className="mt-1 truncate text-[10px] text-emerald-700 sm:text-xs">
+@@ -135,7 +151,7 @@ export function ProductPreview() {
+                       <p className="mt-2 text-[9px] text-emerald-700 sm:text-[11px]">
+                         {appointment.time}
+                       </p>
+-                    </div>
++                    </motion.div>
+                   ))}
+                 </div>
+               </div>
+@@ -144,6 +160,19 @@ export function ProductPreview() {
+           <p className="mt-3 text-right text-xs text-slate-500">
+             Vista previa con datos de ejemplo
+           </p>
++          <motion.div
++            aria-hidden="true"
++            initial={{ opacity: 0, y: 16, scale: 0.96 }}
++            whileInView={{ opacity: 1, y: 0, scale: 1 }}
++            viewport={{ once: true, amount: 0.6 }}
++            transition={{ delay: 1.9, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
++            className="float-soft absolute right-4 bottom-12 hidden items-center gap-2.5 rounded-xl border border-emerald-200 bg-white px-4 py-3 text-xs font-medium text-emerald-900 shadow-lg shadow-emerald-900/10 md:flex"
++          >
++            <span className="flex size-6 items-center justify-center rounded-full bg-primary text-white">
++              <Check size={13} />
++            </span>
++            Reserva guardada con éxito
++          </motion.div>
+         </div>
+       </div>
+     </Link>
+diff --git a/components/marketing/site-header.tsx b/components/marketing/site-header.tsx
+index 13900cf..b6f4715 100644
+--- a/components/marketing/site-header.tsx
++++ b/components/marketing/site-header.tsx
+@@ -1,32 +1,89 @@
++"use client";
++
++import { useEffect, useState } from "react";
+ import Link from "next/link";
++import { motion } from "framer-motion";
+ import { ArrowUpRight } from "lucide-react";
+ import { Brand } from "@/components/brand";
+ import { Button } from "@/components/ui/button";
+ 
++const links = [
++  { id: "funcionalidades", label: "Producto" },
++  { id: "como-funciona", label: "Cómo funciona" },
++  { id: "precios", label: "Precios" },
++] as const;
++
+ export function SiteHeader() {
++  const [scrolled, setScrolled] = useState(false);
++  const [active, setActive] = useState<string>("");
++
++  useEffect(() => {
++    const onScroll = () => setScrolled(window.scrollY > 24);
++    onScroll();
++    window.addEventListener("scroll", onScroll, { passive: true });
++
++    const observer = new IntersectionObserver(
++      (entries) => {
++        for (const entry of entries) if (entry.isIntersecting) setActive(entry.target.id);
++      },
++      { rootMargin: "-45% 0px -50% 0px" },
++    );
++    for (const { id } of links) {
++      const node = document.getElementById(id);
++      if (node) observer.observe(node);
++    }
++    return () => {
++      window.removeEventListener("scroll", onScroll);
++      observer.disconnect();
++    };
++  }, []);
++
+   return (
+-    <header className="relative z-20 mx-auto max-w-[1200px] px-5 pt-6 sm:px-8">
+-      <nav aria-label="Navegación principal" className="site-nav">
+-        <div className="flex min-h-16 items-center justify-between gap-4 px-5 sm:px-6">
++    <header className="sticky top-0 z-40 mx-auto max-w-[1200px] px-5 pt-4 sm:px-8 sm:pt-5">
++      <motion.nav
++        aria-label="Navegación principal"
++        data-scrolled={scrolled}
++        initial={{ opacity: 0, y: -16 }}
++        animate={{ opacity: 1, y: 0 }}
++        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
++        className="site-nav"
++      >
++        <div
++          className={`flex items-center justify-between gap-4 px-5 transition-[min-height] duration-300 sm:px-6 ${
++            scrolled ? "min-h-14" : "min-h-16"
++          }`}
++        >
+           <Brand />
+-          <div className="hidden items-center gap-7 text-sm text-slate-600 lg:flex">
+-            <Link href="/#funcionalidades" className="transition-colors hover:text-primary">
+-              Producto
+-            </Link>
+-            <Link href="/#como-funciona" className="transition-colors hover:text-primary">
+-              Cómo funciona
+-            </Link>
+-            <Link href="/#precios" className="transition-colors hover:text-primary">
+-              Precios
+-            </Link>
+-            <Link href="/demo" className="transition-colors hover:text-primary">
++          <div className="hidden items-center gap-1 text-sm text-slate-600 lg:flex">
++            {links.map(({ id, label }) => (
++              <Link
++                key={id}
++                href={`/#${id}`}
++                className="relative rounded-full px-4 py-2 transition-colors hover:text-primary"
++              >
++                {active === id && (
++                  <motion.span
++                    layoutId="nav-active"
++                    className="absolute inset-0 rounded-full bg-emerald-50"
++                    transition={{ type: "spring", stiffness: 380, damping: 32 }}
++                  />
++                )}
++                <span className={`relative ${active === id ? "text-emerald-800" : ""}`}>
++                  {label}
++                </span>
++              </Link>
++            ))}
++            <Link
++              href="/demo"
++              className="relative rounded-full px-4 py-2 transition-colors hover:text-primary"
++            >
+               Demo
+             </Link>
+           </div>
+           <div className="flex items-center gap-5">
+             <Link
+               href="/login"
+-              className="hidden text-sm text-slate-600 hover:text-primary sm:block"
++              className="hidden text-sm text-slate-600 transition-colors hover:text-primary sm:block"
+             >
+               Iniciar sesión
+             </Link>
+@@ -52,7 +109,7 @@ export function SiteHeader() {
+             Acceder
+           </Link>
+         </div>
+-      </nav>
++      </motion.nav>
+     </header>
+   );
+ }
+diff --git a/package-lock.json b/package-lock.json
+index 04dd8dd..1ebab26 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -16,11 +16,9 @@
+         "@fullcalendar/timegrid": "^6.1.22",
+         "@supabase/ssr": "^0.12.7",
+         "@supabase/supabase-js": "^2.118.0",
+-        "aos": "^2.3.4",
+         "class-variance-authority": "^0.7.1",
+         "cn": "^0.5.0",
+         "framer-motion": "^14.5.0",
+-        "gsap": "^3.15.0",
+         "lucide-react": "^1.61.0",
+         "luxon": "^3.7.2",
+         "next": "16.4.0",
+@@ -35,7 +33,6 @@
+       "devDependencies": {
+         "@electric-sql/pglite": "^0.5.11",
+         "@tailwindcss/turbopack": "^4",
+-        "@types/aos": "^3.0.8",
+         "@types/luxon": "^3.7.6",
+         "@types/node": "^20",
+         "@types/react": "^19",
+@@ -1672,9 +1669,6 @@
+       "cpu": [
+         "arm"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1691,9 +1685,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1710,9 +1701,6 @@
+       "cpu": [
+         "ppc64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1729,9 +1717,6 @@
+       "cpu": [
+         "riscv64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1748,9 +1733,6 @@
+       "cpu": [
+         "s390x"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1767,9 +1749,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1786,9 +1765,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1805,9 +1781,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1824,9 +1797,6 @@
+       "cpu": [
+         "arm"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1849,9 +1819,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1874,9 +1841,6 @@
+       "cpu": [
+         "ppc64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1899,9 +1863,6 @@
+       "cpu": [
+         "riscv64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1924,9 +1885,6 @@
+       "cpu": [
+         "s390x"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1949,9 +1907,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1974,9 +1929,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1999,9 +1951,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -2334,9 +2283,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2353,9 +2299,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2372,9 +2315,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2391,9 +2331,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -4352,9 +4289,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -4372,9 +4306,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -4392,9 +4323,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -4412,9 +4340,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -4593,13 +4518,6 @@
+         "tslib": "^2.4.0"
+       }
+     },
+-    "node_modules/@types/aos": {
+-      "version": "3.0.8",
+-      "resolved": "https://registry.npmjs.org/@types/aos/-/aos-3.0.8.tgz",
+-      "integrity": "sha512-Wydvt0OnVYO5YZxroBOYITIkAKtKmni9GUQRKuWMK3doplBSaHU11HIIweGwqF/ycmbHQGoLUQzuXFRVY+Ougg==",
+-      "dev": true,
+-      "license": "MIT"
+-    },
+     "node_modules/@types/estree": {
+       "version": "1.0.9",
+       "resolved": "https://registry.npmjs.org/@types/estree/-/estree-1.0.9.tgz",
+@@ -5066,9 +4984,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -5083,9 +4998,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -5100,9 +5012,6 @@
+         "loong64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -5117,9 +5026,6 @@
+         "loong64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -5134,9 +5040,6 @@
+         "ppc64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -5151,9 +5054,6 @@
+         "riscv64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -5168,9 +5068,6 @@
+         "riscv64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -5185,9 +5082,6 @@
+         "s390x"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -5202,9 +5096,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -5219,9 +5110,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -5446,17 +5334,6 @@
+         "url": "https://github.com/chalk/ansi-styles?sponsor=1"
+       }
+     },
+-    "node_modules/aos": {
+-      "version": "2.3.4",
+-      "resolved": "https://registry.npmjs.org/aos/-/aos-2.3.4.tgz",
+-      "integrity": "sha512-zh/ahtR2yME4I51z8IttIt4lC1Nw0ktsFtmeDzID1m9naJnWXhCoARaCgNOGXb5CLy3zm+wqmRAEgMYB5E2HUw==",
+-      "license": "MIT",
+-      "dependencies": {
+-        "classlist-polyfill": "^1.0.3",
+-        "lodash.debounce": "^4.0.6",
+-        "lodash.throttle": "^4.0.1"
+-      }
+-    },
+     "node_modules/argparse": {
+       "version": "2.0.1",
+       "resolved": "https://registry.npmjs.org/argparse/-/argparse-2.0.1.tgz",
+@@ -5973,12 +5850,6 @@
+         "url": "https://polar.sh/cva"
+       }
+     },
+-    "node_modules/classlist-polyfill": {
+-      "version": "1.2.0",
+-      "resolved": "https://registry.npmjs.org/classlist-polyfill/-/classlist-polyfill-1.2.0.tgz",
+-      "integrity": "sha512-GzIjNdcEtH4ieA2S8NmrSxv7DfEV5fmixQeyTmqmRmRJPGpRBaSnA2a0VrCjyT8iW8JjEdMbKzDotAJf+ajgaQ==",
+-      "license": "Unlicense"
+-    },
+     "node_modules/cli-cursor": {
+       "version": "5.0.0",
+       "resolved": "https://registry.npmjs.org/cli-cursor/-/cli-cursor-5.0.0.tgz",
+@@ -8006,12 +7877,6 @@
+       "dev": true,
+       "license": "ISC"
+     },
+-    "node_modules/gsap": {
+-      "version": "3.15.0",
+-      "resolved": "https://registry.npmjs.org/gsap/-/gsap-3.15.0.tgz",
+-      "integrity": "sha512-dMW4CWBTUK1AEEDeZc1g4xpPGIrSf9fJF960qbTZmN/QwZIWY5wgliS6JWl9/25fpTGJrMRtSjGtOmPnfjZB+A==",
+-      "license": "Standard 'no charge' license: https://gsap.com/standard-license."
+-    },
+     "node_modules/has-bigints": {
+       "version": "1.1.0",
+       "resolved": "https://registry.npmjs.org/has-bigints/-/has-bigints-1.1.0.tgz",
+@@ -9208,9 +9073,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -9232,9 +9094,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -9256,9 +9115,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -9280,9 +9136,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -9354,12 +9207,6 @@
+         "url": "https://github.com/sponsors/sindresorhus"
+       }
+     },
+-    "node_modules/lodash.debounce": {
+-      "version": "4.0.8",
+-      "resolved": "https://registry.npmjs.org/lodash.debounce/-/lodash.debounce-4.0.8.tgz",
+-      "integrity": "sha512-FT1yDzDYEoYWhnSGnpE/4Kj1fLZkDFyqRb7fNt6FdYOSxlUWAtp42Eh6Wb0rGIv/m9Bgo7x4GhQbm5Ys4SG5ow==",
+-      "license": "MIT"
+-    },
+     "node_modules/lodash.merge": {
+       "version": "4.6.2",
+       "resolved": "https://registry.npmjs.org/lodash.merge/-/lodash.merge-4.6.2.tgz",
+@@ -9367,12 +9214,6 @@
+       "dev": true,
+       "license": "MIT"
+     },
+-    "node_modules/lodash.throttle": {
+-      "version": "4.1.1",
+-      "resolved": "https://registry.npmjs.org/lodash.throttle/-/lodash.throttle-4.1.1.tgz",
+-      "integrity": "sha512-wIkUCfVKpVsWo3JSZlc+8MB5it+2AN5W8J7YVMST30UrvcQNZ1Okbj+rbVniijTWE6FGYy4XJq/rHkas8qJMLQ==",
+-      "license": "MIT"
+-    },
+     "node_modules/log-symbols": {
+       "version": "6.0.0",
+       "resolved": "https://registry.npmjs.org/log-symbols/-/log-symbols-6.0.0.tgz",
+diff --git a/package.json b/package.json
+index c9102b6..69ba115 100644
+--- a/package.json
++++ b/package.json
+@@ -20,11 +20,9 @@
+     "@fullcalendar/timegrid": "^6.1.22",
+     "@supabase/ssr": "^0.12.7",
+     "@supabase/supabase-js": "^2.118.0",
+-    "aos": "^2.3.4",
+     "class-variance-authority": "^0.7.1",
+     "cn": "^0.5.0",
+     "framer-motion": "^14.5.0",
+-    "gsap": "^3.15.0",
+     "lucide-react": "^1.61.0",
+     "luxon": "^3.7.2",
+     "next": "16.4.0",
+@@ -39,7 +37,6 @@
+   "devDependencies": {
+     "@electric-sql/pglite": "^0.5.11",
+     "@tailwindcss/turbopack": "^4",
+-    "@types/aos": "^3.0.8",
+     "@types/luxon": "^3.7.6",
+     "@types/node": "^20",
+     "@types/react": "^19",
+-- 
+2.43.0
+
