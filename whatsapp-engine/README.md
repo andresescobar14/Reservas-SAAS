@@ -1,6 +1,8 @@
 # Motor de WhatsApp de Reserva
 
-Microservicio Node.js persistente, independiente de Next.js y Vercel. Requiere Node.js 22 o posterior. Express escucha en `http://localhost:3001`; no inicia navegadores ni envía mensajes hasta recibir una solicitud autorizada.
+Microservicio Node.js persistente, independiente de Next.js y Vercel. Requiere Node.js 22.19 o posterior. Express escucha en `http://localhost:3001`; no inicia navegadores ni envía mensajes hasta recibir una solicitud autorizada.
+
+`npm start` y `npm run dev` usan los certificados de confianza del sistema con `--use-system-ca`. Esto permite conectar con Supabase en este entorno de Windows manteniendo la validación TLS. Un fallo de red o certificado responde 503; no se presenta como una sesión vencida.
 
 ## Arranque local
 
@@ -62,12 +64,33 @@ Por defecto `CORS_ORIGINS` permite `http://localhost:3000` y `http://127.0.0.1:3
 Para Railway, Render o un servidor equivalente:
 
 1. Despliega **esta carpeta** como servicio persistente con disco y Chromium/dependencias del sistema disponibles; no como función de Vercel.
-2. Configura `HOST=0.0.0.0`, el `PORT` del proveedor, las variables de Supabase y `CORS_ORIGINS=https://reservas-saas-gray.vercel.app`.
+2. Configura `HOST=0.0.0.0`, el `PORT` del proveedor, las variables de Supabase y `CORS_ORIGINS=https://reservas-saas-ae.vercel.app`.
 3. Monta un disco persistente en `WHATSAPP_AUTH_PATH`. Ejecuta Chromium con usuario sin privilegios y conserva su sandbox. No hay flags `--no-sandbox`.
 4. Configura en Next.js `NEXT_PUBLIC_WHATSAPP_ENGINE_URL=https://tu-motor.example` y vuelve a desplegar el frontend. Una página HTTPS necesita un motor HTTPS; `localhost` solo sirve para desarrollo en tu equipo.
 5. Una réplica es dueña de cada perfil. Este Map no coordina réplicas distintas: antes de escalar horizontalmente implementa asignación de sesiones y bloqueo distribuido.
 
 El motor está excluido de la subida del frontend por `.vercelignore`.
+
+### Contenedor de producción
+
+`Dockerfile` instala Node.js 24 y el Chrome correspondiente al lockfile, con las dependencias de Linux. `.dockerignore` permite únicamente los archivos de ejecución y evita copiar credenciales, perfiles o cachés del equipo. El proceso de la aplicación y Chrome corren como usuario `node`.
+
+El proveedor debe montar un disco persistente en `/var/lib/whatsapp` y ofrecer un dominio HTTPS. Las variables necesarias están en `production.env.example`. El contenedor acepta el `PORT` asignado por el proveedor; el puerto predeterminado es 3001. `/health` comprueba el proceso HTTP. Para verificar Chrome y la autorización de Supabase hay que generar un QR desde una cuenta autenticada.
+
+Chromium conserva su sandbox. Antes de elegir el plan del proveedor, confirma que el entorno admite ejecutarlo; algunos contenedores administrados restringen los namespaces que necesita. No se añadieron flags para desactivarlo. El contenedor se preparó en Windows sin Docker instalado: queda pendiente construirlo y probar el QR en el host elegido.
+
+Para conectar el servicio publicado a la web, configura `NEXT_PUBLIC_WHATSAPP_ENGINE_URL` en **Production del proyecto Vercel `reservas-saas-ae`**, con la URL HTTPS real del motor, y redespliega ese mismo proyecto. Comprueba primero `/health`, CORS desde el dominio público y que las rutas de sesiones rechacen peticiones anónimas. No configures `localhost` como URL del motor en producción.
+
+### Configuración de Railway
+
+- Fuente: solo `whatsapp-engine/`, con su `Dockerfile`; la web continúa en Vercel.
+- Volumen: montar en `/var/lib/whatsapp` antes de vincular teléfonos. Una única réplica.
+- Variables: las de `production.env.example`, con la URL y la clave pública del mismo Supabase que utiliza la web. La prueba inicial tiene memoria limitada: comenzar con `MAX_SESSIONS=1`.
+- Healthcheck: `/health`. Mantener el servicio activo; no habilitar suspensión por inactividad.
+- Dominio: generar el dominio HTTPS del servicio y verificar Chrome/QR antes de configurar la URL pública en Vercel.
+- Arranque: conservar el `ENTRYPOINT` del Dockerfile para preparar el volumen y ejecutar Node/Chrome sin privilegios. No sustituirlo por un comando que omita esa preparación.
+
+El 22 de octubre de 2026 se abrió la cuenta Trial, pero el proveedor mantenía suspendidos los builds de los planes Hobby, Free y Trial por una incidencia. El panel no completó la creación del proyecto y no se publicó el motor. Posteriormente se autorizó Railway CLI 5.71.0 exclusivamente en el espacio de trabajo del propietario; `railway init --name reserva-whatsapp-engine` también fue rechazado por Railway con `Deploys have been paused temporarily`. La CLI está autenticada, pero no existe todavía un proyecto o una URL pública del motor. Consultar el [estado del incidente](https://status.railway.com/incident/QH8L8B3E) antes de reintentar. Este registro no confirma un despliegue ni una conexión de WhatsApp en producción.
 
 ## Alcance y pruebas
 

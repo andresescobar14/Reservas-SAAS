@@ -31,7 +31,18 @@ function createTenantAuthorizer(config, clientFactory = createClient) {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser(token);
-    if (authError || !user) throw new ApiError(401, "UNAUTHORIZED", "Inicia sesión de nuevo.");
+    if (authError) {
+      const status = Number(authError.status);
+      if (authError.name === "AuthRetryableFetchError" || !status || status >= 500) {
+        throw new ApiError(
+          503,
+          "AUTH_UNAVAILABLE",
+          "El servicio no pudo conectar con Supabase. Inténtalo de nuevo en unos segundos.",
+        );
+      }
+      throw new ApiError(401, "UNAUTHORIZED", "Inicia sesión de nuevo.");
+    }
+    if (!user) throw new ApiError(401, "UNAUTHORIZED", "Inicia sesión de nuevo.");
     const { data: company, error } = await supabase
       .from("companies")
       .select("id,owner_id,subscription_status,trial_ends_at")

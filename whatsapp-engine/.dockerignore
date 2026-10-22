@@ -1,0 +1,10 @@
+# Lista permitida: no copiar .env, perfiles de WhatsApp, cachés locales ni pruebas.
+*
+!package.json
+!package-lock.json
+!.puppeteerrc.cjs
+!server.js
+!config.js
+!auth.js
+!session-manager.js
+!docker-entrypoint.sh

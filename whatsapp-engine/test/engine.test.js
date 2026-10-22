@@ -305,11 +305,11 @@ test("número no registrado y control de frecuencia de envío", async (t) => {
   assert.equal(clients.get(A).sent.length, 9);
 });
 
-function fakeSupabase({ user = { id: "owner-a" }, company, error = null }) {
+function fakeSupabase({ user = { id: "owner-a" }, company, error = null, authError = null }) {
   let filters = [];
   return {
     client: {
-      auth: { getUser: async () => ({ data: { user }, error: null }) },
+      auth: { getUser: async () => ({ data: { user }, error: authError }) },
       from: () => ({
         select() {
           return this;
@@ -324,6 +324,25 @@ function fakeSupabase({ user = { id: "owner-a" }, company, error = null }) {
     filters,
   };
 }
+
+test("un fallo de conexión de Supabase no se confunde con una sesión vencida", async () => {
+  const config = { supabaseUrl: "https://example.supabase.co", supabaseKey: "public" };
+  for (const authError of [
+    { name: "AuthRetryableFetchError", status: 0 },
+    { name: "AuthApiError", status: 503 },
+  ]) {
+    const fake = fakeSupabase({ user: null, authError });
+    await assert.rejects(createTenantAuthorizer(config, () => fake.client)("jwt", A), {
+      status: 503,
+      code: "AUTH_UNAVAILABLE",
+    });
+  }
+  const expired = fakeSupabase({ user: null, authError: { name: "AuthApiError", status: 401 } });
+  await assert.rejects(createTenantAuthorizer(config, () => expired.client)("jwt", A), {
+    status: 401,
+    code: "UNAUTHORIZED",
+  });
+});
 
 test("autorización real valida identidad, propietario y vigencia de suscripción", async () => {
   const config = { supabaseUrl: "https://example.supabase.co", supabaseKey: "public" };
