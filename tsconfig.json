@@ -30,5 +30,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "whatsapp-engine"]
+  "exclude": ["node_modules", "whatsapp-engine", "whatsapp-cloud-api"]
 }

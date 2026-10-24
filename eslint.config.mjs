@@ -13,6 +13,7 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "whatsapp-engine/**",
+    "whatsapp-cloud-api/**",
   ]),
 ]);
 

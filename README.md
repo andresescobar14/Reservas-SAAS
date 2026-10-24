@@ -96,7 +96,7 @@ La aplicación muestra un mensaje específico y una referencia para los errores 
 | `/auth/callback`           | Confirmación e intercambio del código de sesión                     |
 | `/dashboard/calendario`    | Agenda semanal/mensual, nueva reserva, detalle y estado             |
 | `/dashboard/clientes`      | Directorio, búsqueda, alta e historial                              |
-| `/dashboard/whatsapp`      | Conexión real por QR y estado de WhatsApp por empresa               |
+| `/dashboard/whatsapp`      | Estado de Meta Cloud API, cuota y actualización por empresa               |
 | `/dashboard/integraciones` | Pantalla base de Google Calendar y webhooks                         |
 | `/dashboard/cuenta`        | Verificación opcional del correo por código, sin bloquear el acceso |
 | `/suscripcion`             | Estado de suscripción y acceso al checkout cuando esté configurado  |
@@ -117,9 +117,9 @@ La aplicación muestra un mensaje específico y una referencia para los errores 
 
 ## Motor de WhatsApp e integraciones pendientes
 
-El microservicio independiente está en [`whatsapp-engine`](whatsapp-engine/README.md). Las dependencias y su configuración local ya están instaladas. Ejecuta `npm start` dentro de esa carpeta y abre `/dashboard/whatsapp` desde el frontend local para generar y escanear el QR. Valida el JWT de Supabase, la empresa y su suscripción antes de consultar o enviar. La demo pública conserva su vista de ejemplo sin conectar teléfonos reales.
+La conexión actual del dashboard utiliza [`whatsapp-cloud-api`](whatsapp-cloud-api/README.md), desplegado en Railway y conectado a Supabase mediante un rol limitado. Configura `WHATSAPP_CLOUD_API_URL` en Next.js. `/dashboard/whatsapp` consulta el estado real de la empresa y permite **Actualizar estado**; no genera QR. El motor anterior `whatsapp-engine/` se conserva separado. La demo pública sigue siendo una vista de ejemplo.
 
-- **WhatsApp:** conexión por QR, estados y envío implementados en el motor persistente del puerto 3001. Para producción, alojar ese motor con disco persistente y HTTPS; configurar `NEXT_PUBLIC_WHATSAPP_ENGINE_URL` en Next.js y el origen permitido en el motor. Aún falta el worker con reintentos e idempotencia para recordatorios automáticos. El esquema ya tiene `reminder_due_at` y `reminder_sent_at`.
+- **WhatsApp:** API oficial de Meta con envío HTTP, control de acceso/cuotas y webhook firmado. El dashboard muestra los requisitos pendientes de cada empresa. No hay aún programación automática 24 horas antes ni cobros automatizados; un número oficial, token permanente y plantilla aprobada son necesarios para enviar recordatorios de producción.
 - **Pagos:** integrar checkout y webhook firmado. Solo un backend autorizado debe actualizar `companies.subscription_status`. `BILLING_CHECKOUT_URL` permite mostrar una URL HTTPS de checkout alojado cuando exista la integración; definirla por sí sola no activa una suscripción.
 - **Google Calendar y webhooks:** implementar autorización OAuth, almacenamiento seguro de tokens, endpoints autenticados y resolución de duplicados para sincronización bidireccional.
 
