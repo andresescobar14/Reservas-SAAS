@@ -3,6 +3,7 @@ import { ArrowLeft, Check, MessageCircle, Sparkles } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { StarField } from "@/components/marketing/motion";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { brand } from "@/lib/brand";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -87,7 +88,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
         <p className="text-center text-sm text-slate-400">
-          Reserva · Menos pendientes, más posibilidades.
+          {brand.name} · Menos pendientes, más posibilidades.
         </p>
       </main>
     </div>

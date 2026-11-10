@@ -1,7 +1,8 @@
 import { DashboardShell } from "@/components/dashboard/shell";
-import { requireActiveCompany } from "@/lib/tenant";
+import { requireCompany } from "@/lib/tenant";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { company } = await requireActiveCompany();
+  // Cada página de producto exige su plan; la configuración de conexión sigue accesible.
+  const { company } = await requireCompany();
   return <DashboardShell company={company}>{children}</DashboardShell>;
 }

@@ -69,6 +69,7 @@ create table if not exists whatsapp_cloud.outbox (
   idempotency_key text not null check (char_length(idempotency_key) between 8 and 128),
   fingerprint text not null,
   reservation_id uuid not null,
+  reservation_starts_at timestamptz,
   phone text not null,
   phone_id text not null,
   period text not null,

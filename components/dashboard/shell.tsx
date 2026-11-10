@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { brand } from "@/lib/brand";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { MotionConfig, motion } from "framer-motion";
@@ -166,7 +167,7 @@ export function DashboardShell({
               className="mt-5 flex items-center gap-3 px-3 py-2 text-xs text-slate-400"
             >
               <CircleHelp size={16} />
-              Conoce Reserva
+              Conoce {brand.name}
             </Link>
             {!demo && (
               <form action={signOut}>

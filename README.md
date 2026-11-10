@@ -1,6 +1,12 @@
-# Reserva
+# Reservas - Codesc
 
 Base local de un SaaS B2B para gestionar reservas y clientes, construida según `planificacion.md`.
+
+## WhatsApp y automatización propia
+
+La integración vigente utiliza un número registrado directamente en WhatsApp Cloud API y un worker persistente de Railway. PostgreSQL programa confirmación al reservar y un recordatorio previo, con consentimiento, cuota e idempotencia por empresa. El dashboard permite gestionar la conexión, revisar las dos plantillas, activar/pausar los envíos y consultar su cola. Cal.com puede enviar sus webhooks firmados directamente al servidor; Make está desactivado por defecto. Guía de instalación, pruebas y límites actuales: [WhatsApp sin Make](docs/whatsapp-sin-make.md).
+
+Las migraciones de conexión y automatización ya están aplicadas en Supabase y el dashboard está publicado en el proyecto original de Vercel. El motor propio se despliega en el servicio existente de Railway. Para empezar a enviar, completa el registro del número emisor y la facturación en Meta, valida la conexión desde WhatsApp en el dashboard y revisa las plantillas.
 
 ## Stack
 
@@ -8,9 +14,9 @@ Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, shadcn/ui (Radix)
 
 ## Interfaz y precios
 
-La aplicación arranca en **modo oscuro** y ofrece un botón (sol/luna) para cambiar a modo claro; la elección se guarda en `localStorage` (`reserva-theme`). El verde es el color principal en botones, enlaces, focus e iconos. La portada adapta la composición de Reflect Notes a superficies blancas, navegación flotante y tarjetas con brillo interior. La sección `/#precios` sigue las dos columnas de la referencia de Unicorn Studio: prueba de **14 días gratis** y **Reserva Pro por $499 MXN al mes**.
+La aplicación arranca en **modo oscuro** y ofrece un botón (sol/luna) para cambiar a modo claro; la elección se guarda en `localStorage` (`reserva-theme`). El verde es el color principal en botones, enlaces, focus e iconos. La portada adapta la composición de Reflect Notes a superficies blancas, navegación flotante y tarjetas con brillo interior. La sección `/#precios` sigue las dos columnas de la referencia de Unicorn Studio: prueba de **14 días gratis** y **Reservas Pro por $499 MXN al mes**.
 
-Los precios se editan en `lib/pricing.ts` y se reutilizan en `/suscripcion`. Los pagos reales requieren conectar el checkout y su webhook; mostrar un precio no activa cobros. El motor local de WhatsApp ya permite conexión por QR y envío desde una sesión por empresa; la programación automática de recordatorios y Google Calendar siguen pendientes.
+Los precios se editan en `lib/pricing.ts` y se reutilizan en `/suscripcion`. Los pagos reales requieren conectar el checkout y su webhook; mostrar un precio no activa cobros. El motor QR anterior se conserva como compatibilidad local; la integración vigente usa Meta y automatización propia. La integración directa con Google Calendar sigue pendiente.
 
 La tipografía Inter se sirve localmente. Los párrafos principales tienen 16–20 px y los H2 de la landing, 36–48 px. Consulta `docs/design-system.md` para los tokens y la adaptación de las referencias.
 
@@ -27,7 +33,7 @@ Abre http://localhost:3000. La landing, Login/Register y la demo funcionan sin c
 
 ## Publicación en Vercel
 
-Producción: **https://reservas-saas-gray.vercel.app**. El proyecto `reservas-saas` está vinculado al espacio `andres-c5d1` mediante `.vercel/project.json`, que permanece fuera de Git.
+Producción actual: **https://reservas-saas-ae.vercel.app**. Verificar el proyecto explícito al desplegar: la vinculación local `.vercel/project.json` puede apuntar a un proyecto anterior.
 
 `vercel.json` configura Next.js, `npm ci` y `npm run build`. `.vercelignore` excluye archivos de entorno, herramientas locales, documentación, pruebas y SQL de la subida. Las variables públicas de Supabase y el dominio se configuran en Vercel para Production. `EMAIL_VERIFICATION_SECRET` es una clave privada de producción independiente de la local, almacenada como Secret.
 
@@ -96,7 +102,7 @@ La aplicación muestra un mensaje específico y una referencia para los errores 
 | `/auth/callback`           | Confirmación e intercambio del código de sesión                     |
 | `/dashboard/calendario`    | Agenda semanal/mensual, nueva reserva, detalle y estado             |
 | `/dashboard/clientes`      | Directorio, búsqueda, alta e historial                              |
-| `/dashboard/whatsapp`      | Estado de Meta Cloud API, cuota y actualización por empresa               |
+| `/dashboard/whatsapp`      | Estado de Meta Cloud API, cuota y actualización por empresa         |
 | `/dashboard/integraciones` | Pantalla base de Google Calendar y webhooks                         |
 | `/dashboard/cuenta`        | Verificación opcional del correo por código, sin bloquear el acceso |
 | `/suscripcion`             | Estado de suscripción y acceso al checkout cuando esté configurado  |
@@ -119,7 +125,7 @@ La aplicación muestra un mensaje específico y una referencia para los errores 
 
 La conexión actual del dashboard utiliza [`whatsapp-cloud-api`](whatsapp-cloud-api/README.md), desplegado en Railway y conectado a Supabase mediante un rol limitado. Configura `WHATSAPP_CLOUD_API_URL` en Next.js. `/dashboard/whatsapp` consulta el estado real de la empresa y permite **Actualizar estado**; no genera QR. El motor anterior `whatsapp-engine/` se conserva separado. La demo pública sigue siendo una vista de ejemplo.
 
-- **WhatsApp:** API oficial de Meta con envío HTTP, control de acceso/cuotas y webhook firmado. El dashboard muestra los requisitos pendientes de cada empresa. No hay aún programación automática 24 horas antes ni cobros automatizados; un número oficial, token permanente y plantilla aprobada son necesarios para enviar recordatorios de producción.
+- **WhatsApp:** API oficial de Meta con conexión directa, cuotas, webhook firmado y programación propia mediante PostgreSQL y Railway. El dashboard muestra los requisitos pendientes de cada empresa. Se necesita completar el alta real de Meta, el número registrado en Cloud API, las dos plantillas aprobadas y el acceso de WhatsApp para enviar. Los cobros automatizados siguen pendientes.
 - **Pagos:** integrar checkout y webhook firmado. Solo un backend autorizado debe actualizar `companies.subscription_status`. `BILLING_CHECKOUT_URL` permite mostrar una URL HTTPS de checkout alojado cuando exista la integración; definirla por sí sola no activa una suscripción.
 - **Google Calendar y webhooks:** implementar autorización OAuth, almacenamiento seguro de tokens, endpoints autenticados y resolución de duplicados para sincronización bidireccional.
 

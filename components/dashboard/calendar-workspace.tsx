@@ -7,6 +7,7 @@ import { CalendarDays, Check, Clock3, MessageCircle, Plus, Users } from "lucide-
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,7 @@ export function CalendarWorkspace({
   initialDate,
   onSave,
   onStatusChange,
+  onReschedule,
 }: {
   company: Company;
   customers: Customer[];
@@ -44,6 +46,7 @@ export function CalendarWorkspace({
   initialDate: string;
   onSave: (data: FormData) => Promise<ActionResult>;
   onStatusChange: (id: string, status: "completed" | "cancelled") => Promise<ActionResult>;
+  onReschedule?: (id: string, startsAt: string, duration: number) => Promise<ActionResult>;
 }) {
   const [open, setOpen] = useState(false);
   const [start, setStart] = useState("");
@@ -190,6 +193,83 @@ export function CalendarWorkspace({
                   ? "Recordatorio enviado."
                   : "No se ha enviado un recordatorio. Requiere WhatsApp conectado y el servicio de envíos activo."}
               </p>
+              {selected.customer_response === "reschedule_requested" && (
+                <p
+                  role="status"
+                  className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-base text-amber-900"
+                >
+                  El cliente solicitó cambiar su cita por WhatsApp. Contacta con él para acordar la
+                  nueva fecha. Se detuvo el recordatorio pendiente.
+                </p>
+              )}
+              {selected.customer_response === "confirmed" && (
+                <p className="text-base text-emerald-700">
+                  El cliente confirmó su asistencia por WhatsApp.
+                </p>
+              )}
+              {selected.status === "confirmed" && onReschedule && (
+                <form
+                  className="space-y-3 rounded-xl border p-4"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    const values = new FormData(event.currentTarget);
+                    const date = DateTime.fromISO(String(values.get("date")), {
+                      zone: company.timezone,
+                    });
+                    if (!date.isValid || date.toMillis() <= Date.now()) {
+                      toast.error("Elige una fecha futura.");
+                      return;
+                    }
+                    startTransition(async () => {
+                      try {
+                        const result = await onReschedule(
+                          selected.id,
+                          date.toISO()!,
+                          Number(values.get("duration")),
+                        );
+                        if (result.error) {
+                          toast.error(result.error);
+                          return;
+                        }
+                        toast.success(result.success);
+                        setSelected(null);
+                      } catch {
+                        toast.error("No se pudo cambiar la reserva.");
+                      }
+                    });
+                  }}
+                >
+                  <label className="block space-y-2 text-sm" htmlFor="reschedule-date">
+                    <span>Nueva fecha y hora</span>
+                    <Input
+                      id="reschedule-date"
+                      name="date"
+                      type="datetime-local"
+                      required
+                      defaultValue={DateTime.fromISO(selected.starts_at)
+                        .setZone(company.timezone)
+                        .toFormat("yyyy-MM-dd'T'HH:mm")}
+                    />
+                  </label>
+                  <label className="block space-y-2 text-sm" htmlFor="reschedule-duration">
+                    <span>Duración en minutos</span>
+                    <Input
+                      id="reschedule-duration"
+                      name="duration"
+                      type="number"
+                      min={15}
+                      max={480}
+                      required
+                      defaultValue={Math.round(
+                        (Date.parse(selected.ends_at) - Date.parse(selected.starts_at)) / 60000,
+                      )}
+                    />
+                  </label>
+                  <Button disabled={pending} type="submit" variant="outline">
+                    Guardar nueva fecha
+                  </Button>
+                </form>
+              )}
               {selected.status === "confirmed" && (
                 <div className="flex justify-end gap-2 border-t pt-5">
                   {(["cancelled", "completed"] as const).map((status) => (

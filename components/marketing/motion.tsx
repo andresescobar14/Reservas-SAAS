@@ -130,3 +130,24 @@ export function StarField({ tone = "light" }: { tone?: "light" | "dark" }) {
     </div>
   );
 }
+
+/** Halo verde que sigue al cursor dentro de la portada. */
+export function CursorGlow() {
+  return (
+    <div
+      aria-hidden="true"
+      className="cursor-glow"
+      ref={(node) => {
+        const host = node?.parentElement;
+        if (!node || !host) return;
+        const move = (event: PointerEvent) => {
+          const rect = host.getBoundingClientRect();
+          node.style.setProperty("--gx", `${event.clientX - rect.left}px`);
+          node.style.setProperty("--gy", `${event.clientY - rect.top}px`);
+        };
+        host.addEventListener("pointermove", move);
+        return () => host.removeEventListener("pointermove", move);
+      }}
+    />
+  );
+}

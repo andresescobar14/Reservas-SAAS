@@ -1,10 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Check, CircleHelp, Cloud, LoaderCircle, RefreshCw, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { brand } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { WhatsAppConnectPanel } from "@/components/dashboard/whatsapp-connect-panel";
+import { AutomationPanel } from "@/components/dashboard/automation-panel";
 
 type CloudStatus = {
   companyId: string;
@@ -15,6 +19,7 @@ type CloudStatus = {
     account: boolean;
     credentials: boolean;
     template: boolean;
+    confirmationTemplate: boolean;
     access: boolean;
     quota: boolean;
   };
@@ -29,10 +34,12 @@ export function WhatsAppCloudWorkspace({
   companyId,
   companyName,
   apiUrl,
+  subscriptionActive = true,
 }: {
   companyId: string;
   companyName: string;
   apiUrl: string;
+  subscriptionActive?: boolean;
 }) {
   const [status, setStatus] = useState<CloudStatus | null>(null);
   const [busy, setBusy] = useState(true);
@@ -102,12 +109,13 @@ export function WhatsAppCloudWorkspace({
     return () => controller.abort();
   }, [refresh]);
 
-  const ready = status?.status === "READY";
+  const ready = status?.status === "READY" && status.checks.confirmationTemplate;
   const checks = [
     { label: "API y base de datos disponibles", done: Boolean(status) },
-    { label: "Empresa dada de alta en WhatsApp", done: status?.checks.account },
+    { label: "Registro del espacio en Reservas", done: status?.checks.account },
     { label: "Número oficial y credencial configurados", done: status?.checks.credentials },
     { label: "Plantilla de recordatorio aprobada", done: status?.checks.template },
+    { label: "Plantilla de confirmación aprobada", done: status?.checks.confirmationTemplate },
     { label: "Acceso aprobado y plan vigente", done: status?.checks.access },
   ];
 
@@ -122,6 +130,33 @@ export function WhatsAppCloudWorkspace({
           Consulta la configuración de Meta para {companyName}.
         </p>
       </div>
+      {!subscriptionActive && (
+        <div
+          role="status"
+          className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-base leading-7 text-amber-900"
+        >
+          <p>
+            Puedes configurar o desconectar tu WhatsApp y revisar sus plantillas desde aquí. La
+            automatización necesita una suscripción vigente y acceso de WhatsApp aprobado.
+          </p>
+          <Link
+            href="/suscripcion"
+            className="mt-2 inline-block font-medium underline underline-offset-4"
+          >
+            Ver mi suscripción
+          </Link>
+        </div>
+      )}
+      <WhatsAppConnectPanel
+        companyId={companyId}
+        apiUrl={apiUrl}
+        onChanged={() => void refresh()}
+      />
+      {subscriptionActive && (
+        <div className="mb-6">
+          <AutomationPanel companyId={companyId} apiUrl={apiUrl} showCal={false} />
+        </div>
+      )}
       <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
         <Card>
           <CardHeader>
@@ -207,7 +242,7 @@ export function WhatsAppCloudWorkspace({
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Uso de recordatorios</CardTitle>
+              <CardTitle className="text-xl">Uso de mensajes automáticos</CardTitle>
               <CardDescription className="text-base">
                 Cuota de WhatsApp de tu empresa
               </CardDescription>
@@ -220,7 +255,7 @@ export function WhatsAppCloudWorkspace({
               </p>
               <p className="mt-3 text-base leading-7 text-slate-600">
                 {status?.plan === "TRIAL"
-                  ? "TRIAL · 35 recordatorios totales durante 7 días. El envío requiere aprobación manual."
+                  ? "TRIAL · 35 mensajes totales durante 7 días. El envío requiere aprobación manual."
                   : status?.plan
                     ? `${status.plan} · Mensajes aceptados por Meta durante el mes actual.`
                     : "El administrador debe activar el plan y configurar el número antes del primer envío."}
@@ -241,7 +276,7 @@ export function WhatsAppCloudWorkspace({
               </p>
               <p>
                 Las tarifas de Meta y el alojamiento del servicio son costos independientes del plan
-                de Reserva.
+                de {brand.name}.
               </p>
               <a
                 href="https://business.whatsapp.com/products/platform-pricing"

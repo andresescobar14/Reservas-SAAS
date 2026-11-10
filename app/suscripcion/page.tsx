@@ -6,6 +6,7 @@ import { requireCompany } from "@/lib/tenant";
 import { hasActiveSubscription, trialDaysRemaining } from "@/lib/subscription";
 import { signOut } from "@/app/actions/auth";
 import { pricing } from "@/lib/pricing";
+import { brand } from "@/lib/brand";
 
 export default async function SubscriptionPage() {
   const { company } = await requireCompany();
@@ -31,7 +32,7 @@ export default async function SubscriptionPage() {
       </p>
       <div className="pricing-glow mt-7 w-full rounded-2xl px-6 py-7">
         <div className="relative z-10">
-          <h2 className="text-xl font-medium">Reserva Pro</h2>
+          <h2 className="text-xl font-medium">{brand.proPlan}</h2>
           <p className="mt-3 text-4xl font-medium text-slate-900">
             ${pricing.monthlyAmount}
             <span className="ml-2 text-base font-normal text-slate-600">
@@ -67,6 +68,14 @@ export default async function SubscriptionPage() {
       {active && (
         <Link href="/dashboard/calendario" className="mt-6 text-sm font-medium text-emerald-700">
           Volver a mi agenda
+        </Link>
+      )}
+      {!active && (
+        <Link
+          href="/dashboard/whatsapp"
+          className="mt-6 text-base font-medium text-emerald-700 underline underline-offset-4"
+        >
+          Configurar mi WhatsApp
         </Link>
       )}
       <form action={signOut}>

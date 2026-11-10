@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { DateTime } from "luxon";
 import { CalendarWorkspace } from "@/components/dashboard/calendar-workspace";
 import { getWorkspaceData } from "@/lib/tenant";
-import { saveReservation, setReservationStatus } from "@/app/actions/workspace";
+import {
+  saveReservation,
+  setReservationStatus,
+  rescheduleReservation,
+} from "@/app/actions/workspace";
 
 export const metadata: Metadata = { title: "Calendario" };
 export default async function CalendarPage() {
@@ -13,6 +17,7 @@ export default async function CalendarPage() {
       initialDate={DateTime.now().setZone(data.company.timezone).toISODate()!}
       onSave={saveReservation}
       onStatusChange={setReservationStatus}
+      onReschedule={rescheduleReservation}
     />
   );
 }

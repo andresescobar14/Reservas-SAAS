@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "tsx --test tests/schema.test.ts tests/subscription.test.ts tests/auth-errors.test.ts tests/verification-receipt.test.ts tests/isolated-auth-client.test.ts",
+    "test": "tsx --test tests/schema.test.ts tests/subscription.test.ts tests/auth-errors.test.ts tests/verification-receipt.test.ts tests/isolated-auth-client.test.ts tests/meta-embedded-signup.test.ts",
     "format": "prettier --write app components lib tests proxy.ts next.config.ts package.json components.json tsconfig.json README.md docs/architecture.md"
   },
   "dependencies": {

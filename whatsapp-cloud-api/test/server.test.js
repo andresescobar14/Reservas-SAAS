@@ -52,6 +52,7 @@ function company(patch = {}) {
     status_pago: "ACTIVO",
     whatsapp_acceso_aprobado: true,
     template_approved: true,
+    confirmation_template_approved: true,
     mensajes_enviados_mes: 0,
     limite_mensajes: 35,
     trial_started_at: new Date(Date.now() - 86400000).toISOString(),
@@ -627,6 +628,9 @@ test("PostgreSQL real: migración, reserva, contador y webhook transaccional", a
   const permissions = fs.readFileSync(path.join(__dirname, "../runtime-role.sql"), "utf8");
   await sql.exec(
     permissions.replace("grant connect on database postgres to reserva_whatsapp;", ""),
+  );
+  await sql.exec(
+    "ALTER TABLE public.reservations ADD COLUMN customer_response text DEFAULT 'pending', ADD COLUMN customer_responded_at timestamptz; GRANT UPDATE(customer_response,customer_responded_at) ON public.reservations TO reserva_whatsapp;",
   );
   await sql.exec(
     permissions.replace("grant connect on database postgres to reserva_whatsapp;", ""),

@@ -28,6 +28,9 @@ export type Reservation = {
   status: "confirmed" | "completed" | "cancelled";
   reminder_due_at: string;
   reminder_sent_at: string | null;
+  customer_response?: "pending" | "confirmed" | "reschedule_requested";
+  customer_responded_at?: string | null;
+  whatsapp_authorized?: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -67,6 +70,27 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      reschedule_reservation: {
+        Args: {
+          p_company_id: string;
+          p_reservation_id: string;
+          p_starts_at: string;
+          p_ends_at: string;
+        };
+        Returns: boolean;
+      };
+      book_reservation_with_whatsapp: {
+        Args: {
+          p_company_id: string;
+          p_full_name: string;
+          p_phone: string;
+          p_service: string;
+          p_starts_at: string;
+          p_ends_at: string;
+          p_whatsapp_consent: boolean;
+        };
+        Returns: string;
+      };
       book_reservation: {
         Args: {
           p_company_id: string;

@@ -41,13 +41,14 @@ export async function saveReservation(formData: FormData): Promise<ActionResult>
   const { full_name, phone, service, starts_at, duration } = parsed.data;
   if (new Date(starts_at).getTime() <= Date.now())
     return { error: "Elige una fecha y hora futuras." };
-  const { error } = await supabase.rpc("book_reservation", {
+  const { error } = await supabase.rpc("book_reservation_with_whatsapp", {
     p_company_id: company.id,
     p_full_name: full_name,
     p_phone: phone,
     p_service: service,
     p_starts_at: starts_at,
     p_ends_at: new Date(new Date(starts_at).getTime() + duration * 60_000).toISOString(),
+    p_whatsapp_consent: formData.get("whatsapp_consent") === "on",
   });
   if (error)
     return { error: "No se pudo guardar la reserva. Revisa tu conexión e inténtalo de nuevo." };
@@ -75,4 +76,34 @@ export async function setReservationStatus(
   return {
     success: status === "completed" ? "Reserva marcada como completada." : "Reserva cancelada.",
   };
+}
+
+export async function rescheduleReservation(
+  id: string,
+  startsAt: string,
+  duration: number,
+): Promise<ActionResult> {
+  const { supabase, company } = await requireActiveCompany();
+  if (
+    !z.uuid().safeParse(id).success ||
+    !z.iso.datetime({ offset: true }).safeParse(startsAt).success ||
+    !Number.isInteger(duration) ||
+    duration < 15 ||
+    duration > 480 ||
+    Date.parse(startsAt) <= Date.now()
+  )
+    return { error: "Elige una fecha futura y una duración válida." };
+  const { data, error } = await supabase.rpc("reschedule_reservation", {
+    p_company_id: company.id,
+    p_reservation_id: id,
+    p_starts_at: startsAt,
+    p_ends_at: new Date(Date.parse(startsAt) + duration * 60000).toISOString(),
+  });
+  if (error || !data)
+    return {
+      error:
+        "No se pudo cambiar la reserva. Si proviene de Cal.com, reprograma allí para mantener ambas agendas sincronizadas.",
+    };
+  revalidatePath("/dashboard", "layout");
+  return { success: "Reserva reprogramada. Se actualizaron los mensajes pendientes." };
 }

@@ -19,7 +19,7 @@ export function useTheme(): Theme {
   return useSyncExternalStore<Theme>(
     subscribe,
     () => (document.documentElement.classList.contains("dark") ? "dark" : "light"),
-    () => "dark",
+    () => "light",
   );
 }
 

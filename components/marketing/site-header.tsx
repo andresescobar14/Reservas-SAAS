@@ -50,7 +50,7 @@ export function SiteHeader() {
         className="site-nav"
       >
         <div
-          className={`flex items-center justify-between gap-4 px-5 transition-[min-height] duration-300 sm:px-6 ${
+          className={`flex items-center justify-between gap-2 px-3 transition-[min-height] duration-300 sm:gap-4 sm:px-6 ${
             scrolled ? "min-h-14" : "min-h-16"
           }`}
         >
@@ -81,7 +81,7 @@ export function SiteHeader() {
               Demo
             </Link>
           </div>
-          <div className="flex items-center gap-4 sm:gap-5">
+          <div className="flex items-center gap-2 sm:gap-5">
             <ThemeToggle />
             <Link
               href="/login"
@@ -89,10 +89,11 @@ export function SiteHeader() {
             >
               Iniciar sesión
             </Link>
-            <Button asChild className="h-10 px-4">
+            <Button asChild className="h-10 px-3 sm:px-4">
               <Link href="/register">
-                Empezar gratis
-                <ArrowUpRight size={16} />
+                <span className="sm:hidden">Empezar</span>
+                <span className="hidden sm:inline">Empezar gratis</span>
+                <ArrowUpRight size={16} className="hidden sm:block" />
               </Link>
             </Button>
           </div>

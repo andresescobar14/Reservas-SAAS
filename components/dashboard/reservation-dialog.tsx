@@ -173,6 +173,15 @@ export function ReservationDialog({
               {error}
             </p>
           )}
+          <label className="flex items-start gap-3 rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm leading-6 text-slate-700">
+            <input
+              type="checkbox"
+              name="whatsapp_consent"
+              className="mt-1 size-4 shrink-0 accent-emerald-600"
+            />
+            El cliente autorizó recibir confirmación y recordatorios de esta reserva por WhatsApp.
+            Solo marca esta casilla si tienes su autorización.
+          </label>
           <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
             <Button
               type="button"

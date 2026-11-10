@@ -10,6 +10,7 @@ import {
   Smartphone,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { brand } from "@/lib/brand";
 
 export function WhatsAppWorkspace() {
   return (
@@ -119,7 +120,7 @@ export function IntegrationsWorkspace() {
           {
             icon: Code2,
             title: "API y webhooks",
-            description: "Un puente entre Reserva y tus herramientas.",
+            description: `Un puente entre ${brand.name} y tus herramientas.`,
             text: "Los eventos de reservas podrán conectarse con tus automatizaciones. La URL y la clave de acceso estarán disponibles al implementar el servicio de webhooks.",
             tag: "Endpoint pendiente de implementar",
             color: "bg-emerald-50 text-primary",

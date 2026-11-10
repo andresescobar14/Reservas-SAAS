@@ -19,6 +19,7 @@ import { Brand } from "@/components/brand";
 import { ProductPreview } from "@/components/marketing/product-preview";
 import {
   ScrollProgress,
+  CursorGlow,
   ScrollTilt,
   SpotlightCard,
   StarField,
@@ -29,6 +30,7 @@ import {
 import { SiteHeader } from "@/components/marketing/site-header";
 import { Button } from "@/components/ui/button";
 import { monthlyFeatures, pricing, trialFeatures } from "@/lib/pricing";
+import { brand } from "@/lib/brand";
 
 const features = [
   {
@@ -92,7 +94,7 @@ const questions = [
   },
   {
     question: "¿Qué pasa cuando terminan los 14 días?",
-    answer: `Puedes continuar con Reserva Pro por $${pricing.monthlyAmount} MXN al mes. Si no activas una suscripción, se pausa el acceso a la agenda y tus datos permanecen en tu espacio.`,
+    answer: `Puedes continuar con ${brand.proPlan} por $${pricing.monthlyAmount} MXN al mes. Si no activas una suscripción, se pausa el acceso a la agenda y tus datos permanecen en tu espacio.`,
   },
   {
     question: "¿Los recordatorios de WhatsApp ya están disponibles?",
@@ -117,6 +119,7 @@ export default function HomePage() {
           >
             <div aria-hidden="true" className="landing-constellation" />
             <StarField />
+            <CursorGlow />
             <div
               aria-hidden="true"
               className="aurora-blob top-10 left-[8%] h-72 w-72 bg-emerald-300/40"
@@ -130,7 +133,7 @@ export default function HomePage() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="landing-badge inline-flex items-center gap-2 rounded-[32px] border border-emerald-200 bg-white px-4 py-2 text-sm font-medium text-emerald-800"
+                className="landing-badge beam relative inline-flex items-center gap-2 rounded-[32px] border border-emerald-200 bg-white px-4 py-2 text-sm font-medium text-emerald-800"
               >
                 <Sparkles size={16} strokeWidth={1.5} aria-hidden="true" />
                 Más orden. Más tiempo para ti.
@@ -191,6 +194,20 @@ export default function HomePage() {
               >
                 <ScrollTilt>
                   <div className="landing-preview-frame relative rounded-2xl p-2 shadow-2xl shadow-emerald-900/10 sm:p-3">
+                    <div className="chip-float float-soft absolute -top-5 -left-6 z-10 hidden items-center gap-2 rounded-2xl border px-4 py-2.5 text-left text-sm lg:flex">
+                      <CircleCheck size={18} className="text-emerald-600" aria-hidden="true" />
+                      <span>
+                        <span className="block font-medium text-slate-900">Cita confirmada</span>
+                        <span className="block text-xs text-slate-500">Ana García · 09:00</span>
+                      </span>
+                    </div>
+                    <div className="chip-float float-soft absolute -right-6 bottom-16 z-10 hidden items-center gap-2 rounded-2xl border px-4 py-2.5 text-left text-sm lg:flex">
+                      <CalendarDays size={18} className="text-emerald-600" aria-hidden="true" />
+                      <span>
+                        <span className="block font-medium text-slate-900">Semana al día</span>
+                        <span className="block text-xs text-slate-500">7 reservas · 6 clientes</span>
+                      </span>
+                    </div>
                     <ProductPreview />
                   </div>
                 </ScrollTilt>
@@ -333,8 +350,8 @@ export default function HomePage() {
                   <span className="landing-accent-text">Mucho más tiempo.</span>
                 </h2>
                 <p className="mt-6 text-lg leading-8 text-slate-600">
-                  Prueba Reserva durante {pricing.trialDays} días. Descubre una forma más simple de
-                  organizar tu negocio.
+                  Prueba {brand.name} durante {pricing.trialDays} días. Descubre una forma más
+                  simple de organizar tu negocio.
                 </p>
               </motion.div>
               <motion.div
@@ -400,7 +417,7 @@ export default function HomePage() {
                     Más popular
                   </span>
                   <h3 id="monthly-plan-title" className="text-2xl font-medium tracking-tight">
-                    Reserva Pro
+                    {brand.proPlan}
                   </h3>
                   <p className="mt-3 text-base leading-7 text-slate-600">
                     Para seguir creciendo después de la prueba.
@@ -414,7 +431,7 @@ export default function HomePage() {
                     </span>
                   </p>
                   <div className="my-7 h-px bg-emerald-100" aria-hidden="true" />
-                  <ul className="space-y-4" aria-label="Funciones del plan Reserva Pro">
+                  <ul className="space-y-4" aria-label={`Funciones del plan ${brand.proPlan}`}>
                     {monthlyFeatures.map((feature) => (
                       <li
                         key={feature}
@@ -525,7 +542,16 @@ export default function HomePage() {
           <div className="mx-auto flex max-w-[1136px] flex-col items-center justify-between gap-6 sm:flex-row">
             <Brand />
             <p className="text-base text-slate-600">Menos pendientes. Más posibilidades.</p>
-            <div className="flex gap-6 text-sm text-slate-600">
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 text-sm text-slate-600">
+              <Link href="/privacidad" className="transition-colors hover:text-emerald-700">
+                Privacidad
+              </Link>
+              <Link
+                href="/eliminacion-de-datos"
+                className="transition-colors hover:text-emerald-700"
+              >
+                Eliminación de datos
+              </Link>
               <a href="#precios" className="transition-colors hover:text-emerald-700">
                 Precios
               </a>
