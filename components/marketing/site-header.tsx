@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ownerBookingPath } from "@/lib/public-booking";
 
 const links = [
   { id: "funcionalidades", label: "Producto" },
@@ -83,19 +83,18 @@ export function SiteHeader() {
           </div>
           <div className="flex items-center gap-2 sm:gap-5">
             <ThemeToggle />
+            <Button
+              asChild
+              className="h-10 bg-emerald-600 px-3 text-white shadow-md shadow-emerald-500/20 hover:bg-emerald-700 sm:px-4"
+            >
+              <Link href={ownerBookingPath}>Reservar ahora</Link>
+            </Button>
             <Link
               href="/login"
               className="hidden text-sm text-slate-600 transition-colors hover:text-primary sm:block"
             >
               Iniciar sesión
             </Link>
-            <Button asChild className="h-10 px-3 sm:px-4">
-              <Link href="/register">
-                <span className="sm:hidden">Empezar</span>
-                <span className="hidden sm:inline">Empezar gratis</span>
-                <ArrowUpRight size={16} className="hidden sm:block" />
-              </Link>
-            </Button>
           </div>
         </div>
         <div className="flex items-center justify-center gap-6 border-t border-emerald-900/5 px-5 py-3 text-sm text-slate-600 lg:hidden">

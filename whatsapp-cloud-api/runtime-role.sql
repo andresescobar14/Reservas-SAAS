@@ -5,7 +5,7 @@ begin;
 grant connect on database postgres to reserva_whatsapp;
 grant usage on schema public,whatsapp_cloud to reserva_whatsapp;
 
-grant select(id,owner_id) on public.companies to reserva_whatsapp;
+grant select(id,owner_id,internal_owner_access) on public.companies to reserva_whatsapp;
 grant select(id,company_id,full_name,phone) on public.customers to reserva_whatsapp;
 grant select(id,company_id,customer_id,starts_at,status),update(status)
   on public.reservations to reserva_whatsapp;

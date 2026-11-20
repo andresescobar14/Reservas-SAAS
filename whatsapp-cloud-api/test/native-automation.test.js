@@ -21,6 +21,7 @@ const COMPANY = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
 const PHONE = "525555555555",
   PHONE_ID = "123456789012345";
 const config = {
+  quietHours: false, // Scheduling tests below exercise retries independently of local wall clock.
   dbMode: "postgres",
   databaseUrl: "postgresql://localhost/test",
   encryptionKey: crypto.randomBytes(32).toString("hex"),
@@ -51,6 +52,7 @@ async function fixture(t) {
       "onboarding.sql",
       "automation.sql",
       "native-automation.sql",
+      "chat.sql",
     ])
       await sql.exec(
         fs

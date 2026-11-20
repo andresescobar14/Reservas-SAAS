@@ -3,12 +3,10 @@
 import Link from "next/link";
 import { MotionConfig, motion } from "framer-motion";
 import {
-  ArrowRight,
   ArrowUpRight,
   CalendarDays,
   Check,
   CircleCheck,
-  LockKeyhole,
   MessageCircle,
   Plus,
   ShieldCheck,
@@ -29,8 +27,9 @@ import {
 } from "@/components/marketing/motion";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { Button } from "@/components/ui/button";
-import { monthlyFeatures, pricing, trialFeatures } from "@/lib/pricing";
+import { monthlyFeatures, pricing } from "@/lib/pricing";
 import { brand } from "@/lib/brand";
+import { ownerBookingPath } from "@/lib/public-booking";
 
 const features = [
   {
@@ -53,9 +52,9 @@ const features = [
   },
   {
     Icon: MessageCircle,
-    title: "El próximo paso: WhatsApp",
-    text: "Preparamos recordatorios 24 horas antes de cada cita, desde el número de tu negocio.",
-    label: "Próximamente",
+    title: "Más cerca, por WhatsApp",
+    text: "Confirma tus citas y programa recordatorios desde el número conectado de tu negocio.",
+    label: "Confirmación y recordatorio",
   },
 ];
 
@@ -72,34 +71,31 @@ const industries = [
 const steps = [
   {
     number: "01",
-    title: "Crea tu espacio",
-    text: "Registra tu negocio y empieza tu prueba gratuita de 14 días, sin tarjeta.",
+    title: "Elige cuándo probar Reservas",
+    text: "Reserva una demostración sin tarjeta y conoce cómo agendarán tus clientes.",
   },
   {
     number: "02",
-    title: "Añade tu primera cita",
-    text: "Elige la fecha, registra al cliente y guarda el servicio que necesita.",
+    title: "Guarda tu cita",
+    text: "Elige un horario disponible, completa tus datos y confirma la reserva.",
   },
   {
     number: "03",
-    title: "Disfruta de una agenda clara",
-    text: "Consulta las próximas visitas y encuentra el historial de tus clientes en segundos.",
+    title: "Recibe tus avisos por WhatsApp",
+    text: "Si lo autorizas, recibirás una confirmación y un recordatorio antes de tu cita.",
   },
 ];
 
 const questions = [
   {
-    question: "¿Necesito una tarjeta para empezar?",
-    answer: `No. Crea tu cuenta y disfruta de ${pricing.trialDays} días gratis. Puedes explorar la agenda y el directorio de clientes sin introducir datos de pago.`,
-  },
-  {
-    question: "¿Qué pasa cuando terminan los 14 días?",
-    answer: `Puedes continuar con ${brand.proPlan} por $${pricing.monthlyAmount} MXN al mes. Si no activas una suscripción, se pausa el acceso a la agenda y tus datos permanecen en tu espacio.`,
+    question: "¿Qué incluye la demostración?",
+    answer:
+      "Una cita de 30 minutos que puedes agendar sin cuenta ni tarjeta. Si autorizas WhatsApp, también puedes probar la confirmación y el recordatorio.",
   },
   {
     question: "¿Los recordatorios de WhatsApp ya están disponibles?",
     answer:
-      "La conexión de WhatsApp por QR y la sincronización con Google Calendar están en preparación. La agenda visual, las reservas y el directorio de clientes ya están disponibles.",
+      "Sí. Los envíos requieren un número conectado a WhatsApp Cloud API, plantillas aprobadas, automatización activa y autorización del cliente. Puedes probar la experiencia reservando una demostración con nosotros.",
   },
 ];
 
@@ -159,20 +155,12 @@ export default function HomePage() {
                   lo que mejor haces.
                 </p>
                 <div className="mt-9 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-                  <Button asChild className="landing-cta h-12 px-6 text-base">
-                    <Link href="/register">
-                      Prueba {pricing.trialDays} días gratis
-                      <ArrowUpRight size={18} aria-hidden="true" />
-                    </Link>
-                  </Button>
                   <Button
                     asChild
-                    variant="outline"
-                    className="landing-secondary h-12 border-slate-200 bg-white px-6 text-base text-slate-700"
+                    className="landing-cta h-13 gap-2 bg-emerald-600 px-7 text-base text-white shadow-lg shadow-emerald-500/25 hover:bg-emerald-700"
                   >
-                    <Link href="/demo">
-                      Explorar la demo
-                      <ArrowRight size={18} aria-hidden="true" />
+                    <Link href={ownerBookingPath}>
+                      <CalendarDays size={19} aria-hidden="true" /> Reservar ahora
                     </Link>
                   </Button>
                 </div>
@@ -183,7 +171,7 @@ export default function HomePage() {
                     className="text-emerald-700"
                     aria-hidden="true"
                   />
-                  Sin tarjeta de crédito. A tu ritmo.
+                  Demostración de 30 minutos, sin tarjeta.
                 </p>
               </motion.div>
               <motion.div
@@ -205,7 +193,9 @@ export default function HomePage() {
                       <CalendarDays size={18} className="text-emerald-600" aria-hidden="true" />
                       <span>
                         <span className="block font-medium text-slate-900">Semana al día</span>
-                        <span className="block text-xs text-slate-500">7 reservas · 6 clientes</span>
+                        <span className="block text-xs text-slate-500">
+                          7 reservas · 6 clientes
+                        </span>
                       </span>
                     </div>
                     <ProductPreview />
@@ -350,8 +340,7 @@ export default function HomePage() {
                   <span className="landing-accent-text">Mucho más tiempo.</span>
                 </h2>
                 <p className="mt-6 text-lg leading-8 text-slate-600">
-                  Prueba {brand.name} durante {pricing.trialDays} días. Descubre una forma más
-                  simple de organizar tu negocio.
+                  Conoce {brand.proPlan} y reserva una demostración para ver cómo funciona.
                 </p>
               </motion.div>
               <motion.div
@@ -359,68 +348,18 @@ export default function HomePage() {
                 initial="hidden"
                 whileInView="visible"
                 viewport={revealViewport}
-                className="mx-auto mt-16 grid max-w-[880px] items-center gap-7 md:grid-cols-2 md:gap-8"
+                className="mx-auto mt-16 max-w-xl"
               >
                 <motion.article
                   variants={fadeUp}
-                  aria-labelledby="trial-plan-title"
-                  className="landing-trial flex flex-col rounded-2xl border border-slate-200 bg-white p-8 md:min-h-[550px] md:py-10"
-                >
-                  <h3 id="trial-plan-title" className="text-2xl font-medium tracking-tight">
-                    Prueba gratuita
-                  </h3>
-                  <p className="mt-3 text-base leading-7 text-slate-600">
-                    Tu primer paso hacia una mejor agenda.
-                  </p>
-                  <p className="mt-7 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <span className="text-[64px] leading-none font-medium tracking-[-0.05em]">
-                      $0
-                    </span>
-                    <span className="text-base text-slate-500">/ {pricing.trialDays} días</span>
-                  </p>
-                  <div className="my-7 h-px bg-slate-100" aria-hidden="true" />
-                  <ul className="space-y-4" aria-label="Funciones de la prueba gratuita">
-                    {trialFeatures.map((feature) => (
-                      <li
-                        key={feature}
-                        className="flex items-start gap-3 text-base leading-6 text-slate-600"
-                      >
-                        <Check
-                          size={18}
-                          strokeWidth={1.5}
-                          className="mt-0.5 shrink-0 text-emerald-600"
-                          aria-hidden="true"
-                        />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="mt-auto pt-9">
-                    <Button asChild className="landing-cta h-12 w-full text-base">
-                      <Link href="/register">
-                        Comenzar prueba gratis
-                        <ArrowUpRight size={17} aria-hidden="true" />
-                      </Link>
-                    </Button>
-                    <p className="mt-4 text-center text-sm text-slate-600">
-                      Sin tarjeta de crédito.
-                    </p>
-                  </div>
-                </motion.article>
-                <motion.article
-                  variants={fadeUp}
                   aria-labelledby="monthly-plan-title"
-                  className="landing-pro beam relative flex flex-col rounded-2xl border-2 border-primary bg-white p-8 pt-10 md:min-h-[606px] md:py-12"
+                  className="landing-pro beam relative flex flex-col rounded-2xl border-2 border-primary bg-white p-8 md:p-10"
                 >
-                  <span className="absolute -top-4 left-1/2 inline-flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-[32px] bg-primary px-4 py-1.5 text-sm font-medium text-pure">
-                    <Sparkles size={14} strokeWidth={1.5} aria-hidden="true" />
-                    Más popular
-                  </span>
                   <h3 id="monthly-plan-title" className="text-2xl font-medium tracking-tight">
                     {brand.proPlan}
                   </h3>
                   <p className="mt-3 text-base leading-7 text-slate-600">
-                    Para seguir creciendo después de la prueba.
+                    Agenda, clientes y recordatorios para tu negocio.
                   </p>
                   <p className="mt-7 flex flex-wrap items-baseline gap-x-2 gap-y-1">
                     <span className="text-[64px] leading-none font-medium tracking-[-0.05em]">
@@ -449,27 +388,14 @@ export default function HomePage() {
                   </ul>
                   <div className="mt-auto pt-9">
                     <Button asChild className="landing-cta h-12 w-full text-base">
-                      <Link href="/register">
-                        Empezar con {pricing.trialDays} días gratis
+                      <Link href={ownerBookingPath}>
+                        Reservar ahora
                         <ArrowUpRight size={17} aria-hidden="true" />
                       </Link>
                     </Button>
-                    <p className="mt-4 text-center text-sm text-emerald-800">
-                      Tú decides si continúas al finalizar.
-                    </p>
                   </div>
                 </motion.article>
               </motion.div>
-              <p className="mx-auto mt-10 flex max-w-xl items-start justify-center gap-2 text-center text-base leading-7 text-slate-600">
-                <LockKeyhole
-                  size={17}
-                  strokeWidth={1.5}
-                  className="mt-1 shrink-0 text-emerald-700"
-                  aria-hidden="true"
-                />
-                Sin cobros automáticos durante la prueba. Todos los importes están expresados en
-                pesos mexicanos.
-              </p>
               <motion.div
                 variants={fadeUp}
                 initial="hidden"
@@ -521,20 +447,17 @@ export default function HomePage() {
                 Haz espacio para lo que viene.
               </h2>
               <p className="relative mx-auto mt-6 max-w-xl text-lg leading-8 text-emerald-100/80">
-                Empieza con una agenda más simple. Tu negocio y tu tiempo lo van a agradecer.
+                Elige un horario y prueba el mismo proceso de reserva que usarán tus clientes.
               </p>
               <Button
                 asChild
                 className="landing-cta relative mt-9 h-12 px-6 text-base shadow-[0_0_40px_#10b98166]"
               >
-                <Link href="/register">
-                  Crear mi espacio gratis
+                <Link href={ownerBookingPath}>
+                  Reservar ahora
                   <ArrowUpRight size={18} aria-hidden="true" />
                 </Link>
               </Button>
-              <p className="relative mt-4 text-base text-emerald-100/70">
-                {pricing.trialDays} días para descubrir otra forma de organizarte.
-              </p>
             </motion.div>
           </section>
         </main>

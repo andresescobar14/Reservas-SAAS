@@ -38,7 +38,7 @@ En la app vinculada a `META_APP_ID`, configura el callback `https://whatsapp-clo
 
 En la base existente, ejecutar como administrador, en este orden:
 
-1. `whatsapp-cloud-api/schema.sql` y `runtime-role.sql` si no están aplicados.
+1. `whatsapp-cloud-api/schema.sql`, `owner-access.sql` y `runtime-role.sql`, en ese orden, si no están aplicados. El permiso interno de propietario se crea apagado para todas las empresas; solo un administrador puede concederlo a la empresa interna del SaaS.
 2. `whatsapp-cloud-api/onboarding.sql`.
 3. `whatsapp-cloud-api/automation.sql` — contiene el importador de reservas reutilizado por Cal.com.
 4. `whatsapp-cloud-api/native-automation.sql`.
@@ -89,6 +89,7 @@ Referencia: [Webhooks oficiales de Cal.com](https://cal.com/docs/developing/guid
 - PostgreSQL conserva los trabajos y utiliza `FOR UPDATE SKIP LOCKED` con leases de dos minutos para recuperar reinicios y evitar dos workers sobre el mismo trabajo.
 - Cada confirmación/recordatorio tiene una clave estable por trabajo y fecha. La cuota se reserva atómicamente antes de llamar a Meta.
 - Una respuesta válida de Meta registra el ID y consume una unidad. «Aceptado por Meta» no equivale a entregado ni leído.
+- Los webhooks firmados conservan los estados `sent`, `delivered`, `read` y `failed` en la cola privada `whatsapp_cloud.inbox`. Guardan el identificador del mensaje, el número emisor interno, la fecha y los códigos numéricos de error; no conservan el teléfono del destinatario ni el contenido del mensaje. Se deduplican y no alteran cuotas ni reservas. Railway también registra esos estados con el prefijo `[meta:delivery]` para diagnosticar mensajes aceptados que no llegan.
 - Un timeout o resultado incierto conserva la cuota reservada y pasa a revisión, sin reenviar automáticamente. Un crash después de aceptar Meta también se concilia con el outbox; no se promete entrega exactamente una vez entre dos sistemas independientes.
 - Los bloqueos recuperables se revisan cada cinco minutos hasta que venza la reserva; errores anteriores al envío tienen reintento limitado. No se reintenta automáticamente un rechazo de Meta cambiando la clave de idempotencia.
 - Hasta cuatro empresas se procesan en paralelo, con una salida/segundo como máximo por empresa. Las consultas de trabajos usan índices y no recorren todas las reservas.

@@ -7,6 +7,8 @@ const path = require("node:path");
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
+const { extractChatEvents, createChatStore, installChatRoutes } = require("./chat");
+const { createPublicBooking, installPublicBookingRoutes } = require("./public-booking");
 const {
   createNativeAutomation,
   installNativeRoutes,
@@ -152,18 +154,20 @@ function validateCompany(company, now = new Date()) {
     const start = Date.parse(company.trial_started_at),
       end = Date.parse(company.trial_ends_at);
     if (
-      !Number.isFinite(start) ||
-      !Number.isFinite(end) ||
-      start > +now ||
-      Math.min(end, start + 7 * 86400000) <= +now
+      company.internal_owner_access !== true &&
+      (!Number.isFinite(start) ||
+        !Number.isFinite(end) ||
+        start > +now ||
+        Math.min(end, start + 7 * 86400000) <= +now)
     ) {
       fail(403, "TRIAL_EXPIRED", "Tu prueba de 7 días ha finalizado. Actualiza tu plan.");
     }
     if (company.whatsapp_acceso_aprobado !== true)
       fail(403, "TRIAL_REVIEW", "Tu acceso de prueba a WhatsApp está en proceso de revisión");
   } else if (
-    !Number.isFinite(Date.parse(company.subscription_ends_at)) ||
-    Date.parse(company.subscription_ends_at) <= +now
+    company.internal_owner_access !== true &&
+    (!Number.isFinite(Date.parse(company.subscription_ends_at)) ||
+      Date.parse(company.subscription_ends_at) <= +now)
   ) {
     fail(
       403,
@@ -353,6 +357,51 @@ function extractEvents(body) {
     }
   return result;
 }
+// Conservar solo la evidencia de entrega; nunca el texto, teléfono del paciente
+// ni los detalles arbitrarios de errores que pueda incluir el proveedor.
+function extractDeliveryEvents(body) {
+  const events = [];
+  if (body?.object !== "whatsapp_business_account") return events;
+  for (const entry of Array.isArray(body.entry) ? body.entry : []) {
+    for (const change of Array.isArray(entry?.changes) ? entry.changes : []) {
+      const value = change?.value,
+        phoneId = value?.metadata?.phone_number_id;
+      if (change?.field !== "messages" || !/^[0-9]{5,30}$/.test(phoneId || "")) continue;
+      for (const receipt of Array.isArray(value.statuses) ? value.statuses : []) {
+        const timestamp = Number(receipt?.timestamp);
+        if (
+          !["sent", "delivered", "read", "failed"].includes(receipt?.status) ||
+          typeof receipt.id !== "string" ||
+          !receipt.id.startsWith("wamid.") ||
+          receipt.id.length > 512 ||
+          /[\s\x00-\x1f\x7f]/.test(receipt.id) ||
+          !Number.isSafeInteger(timestamp) ||
+          timestamp <= 0 ||
+          timestamp * 1000 > Date.now() + 86400000
+        )
+          continue;
+        const errorCodes = [
+          ...new Set(
+            (Array.isArray(receipt.errors) ? receipt.errors : [])
+              .map((error) => error?.code)
+              .filter((code) => Number.isSafeInteger(code) && code > 0),
+          ),
+        ].slice(0, 5);
+        const identity = JSON.stringify([phoneId, receipt.id, receipt.status, timestamp]);
+        events.push({
+          id: `delivery:${crypto.createHash("sha256").update(identity).digest("hex")}`,
+          kind: "delivery",
+          phoneId,
+          messageId: receipt.id,
+          status: receipt.status,
+          timestamp,
+          errorCodes,
+        });
+      }
+    }
+  }
+  return events;
+}
 function resolveAction(event, secret) {
   const signed = parseButtonPayload(event.payload, secret);
   if (signed) return signed;
@@ -534,7 +583,7 @@ function createPostgresDb(config, poolOverride) {
       },
       async findOne({ company_id, owner_id }, client = pool, lock = false) {
         const result = await client.query(
-          `SELECT w.*,coalesce(u.sent,0) AS mensajes_enviados_mes FROM whatsapp_cloud.companies w JOIN public.companies c ON c.id=w.company_id LEFT JOIN whatsapp_cloud.usage u ON u.company_id=w.company_id AND u.period=CASE WHEN w.plan_actual='TRIAL' THEN 'TRIAL' ELSE to_char(now() AT TIME ZONE w.timezone,'YYYY-MM') END WHERE w.company_id=$1 AND c.owner_id=$2 ${lock ? "FOR UPDATE OF w" : ""}`,
+          `SELECT w.*,c.internal_owner_access,coalesce(u.sent,0) AS mensajes_enviados_mes FROM whatsapp_cloud.companies w JOIN public.companies c ON c.id=w.company_id LEFT JOIN whatsapp_cloud.usage u ON u.company_id=w.company_id AND u.period=CASE WHEN w.plan_actual='TRIAL' THEN 'TRIAL' ELSE to_char(now() AT TIME ZONE w.timezone,'YYYY-MM') END WHERE w.company_id=$1 AND c.owner_id=$2 ${lock ? "FOR UPDATE OF w" : ""}`,
           [company_id, owner_id],
         );
         return result.rows[0] || null;
@@ -622,7 +671,10 @@ function createPostgresDb(config, poolOverride) {
             [input.companyId, period],
           )
         ).rows[0];
-        if (quota.sent + quota.reserved >= company.limite_mensajes)
+        if (
+          company.internal_owner_access !== true &&
+          quota.sent + quota.reserved >= company.limite_mensajes
+        )
           throw quotaError(company.plan_actual);
         const id = crypto.randomUUID();
         await client.query(
@@ -698,7 +750,7 @@ function createPostgresDb(config, poolOverride) {
         await client.query("SAVEPOINT process_event");
         try {
           const event = item.event;
-          if (event.kind) await processCoexistenceEvent(client, event);
+          if (event.kind && event.kind !== "delivery") await processCoexistenceEvent(client, event);
           const action = event.kind ? null : resolveAction(event, secret);
           if (action) {
             const selector = action.requestId ? "o.id=$3::uuid" : "o.meta_message_id=$3";
@@ -739,12 +791,24 @@ function createPostgresDb(config, poolOverride) {
       await pool.query("SELECT id FROM whatsapp_cloud.onboarding_sessions LIMIT 0");
       await pool.query("SELECT company_id FROM whatsapp_cloud.automation_keys LIMIT 0");
       await pool.query("SELECT id FROM whatsapp_cloud.jobs LIMIT 0");
+      await pool.query("SELECT id FROM whatsapp_cloud.chat_messages LIMIT 0");
     },
     async close() {
       await pool.end();
     },
   };
   db.onboarding = createPostgresOnboarding(pool, tx);
+  db.publicBooking = createPublicBooking({ pool });
+  db.chat = createChatStore({
+    pool,
+    tx,
+    config,
+    encryptToken,
+    decryptToken,
+    HttpError,
+    findCompany: (...args) => db.companies.findOne(...args),
+    validateCompany,
+  });
   db.automation = createPostgresAutomation(pool, tx);
   db.native = createNativeAutomation({
     pool,
@@ -2033,8 +2097,10 @@ async function deliverReminder({ config, db, http, logger = console }, input, ow
       await db.finish(reservation.id, rejected ? "failed" : "unknown");
       const requestId = reservation.id;
       reservation = null;
+      const metaCode = error.response?.data?.error?.code;
       logger.error(
-        `[meta] Envío ${rejected ? "rechazado" : "pendiente de conciliación"}: ${requestId}`,
+        `[meta] Envío ${rejected ? "rechazado" : "pendiente de conciliación"}: ${requestId}` +
+          (Number.isSafeInteger(metaCode) && metaCode > 0 ? `; código Meta ${metaCode}` : ""),
       );
       return {
         status: rejected ? 502 : 503,
@@ -2065,6 +2131,12 @@ async function deliverReminder({ config, db, http, logger = console }, input, ow
     accepted = true;
     acceptedMessageId = messageId;
     await db.finish(reservation.id, "sent", messageId);
+    if (db.chat)
+      await db.chat
+        .recordTemplate(reservation.company, input, messageId)
+        .catch(() =>
+          logger.error("[chat] Falta registrar una plantilla aceptada en la conversación."),
+        );
     return {
       status: 200,
       body: { success: true, requestId: reservation.id, messageId, replayed: false },
@@ -2190,7 +2262,8 @@ function createMockDb({ companies = [], appointments = [], consents = [] } = {})
           sent: c.usage_period === period ? c.mensajes_enviados_mes || 0 : 0,
           reserved: 0,
         };
-        if (quota.sent + quota.reserved >= c.limite_mensajes) throw quotaError(c.plan_actual);
+        if (c.internal_owner_access !== true && quota.sent + quota.reserved >= c.limite_mensajes)
+          throw quotaError(c.plan_actual);
         quota.reserved++;
         data.usage.set(key, quota);
         const id = crypto.randomUUID();
@@ -2231,7 +2304,7 @@ function createMockDb({ companies = [], appointments = [], consents = [] } = {})
       return atomic(() => {
         const item = [...data.inbox.values()].find((x) => x.state === "pending");
         if (!item) return false;
-        const action = resolveAction(item.event, secret),
+        const action = item.event.kind ? null : resolveAction(item.event, secret),
           event = item.event;
         if (action) {
           const row = [...data.outbox.values()].find(
@@ -2333,16 +2406,27 @@ function createApp({
         return res.sendStatus(400);
       }
       try {
+        const deliveryEvents = extractDeliveryEvents(body);
         // Confirmar recepción después de persistir. Procesamiento asíncrono por worker.
         // Un 200 antes de guardar perdería eventos al reiniciar Railway.
         await db.enqueue([
           ...extractEvents(body),
+          ...deliveryEvents,
           ...extractCoexistenceEvents(
             body,
             config.encryptionKey,
             config.signupEnabled === true || (config.signupTestCompanyIds || []).length > 0,
           ),
         ]);
+        if (db.chat) await db.chat.capture(extractChatEvents(body), deliveryEvents);
+        for (const receipt of deliveryEvents)
+          logger.info?.(
+            `[meta:delivery] ${JSON.stringify({
+              messageId: receipt.messageId,
+              status: receipt.status,
+              errorCodes: receipt.errorCodes,
+            })}`,
+          );
         res.sendStatus(200);
       } catch {
         logger.error("[webhook] No se pudo persistir el evento.");
@@ -2363,10 +2447,12 @@ function createApp({
     }),
   );
   app.use(express.json({ limit: "16kb", strict: true }));
+  installPublicBookingRoutes(app, { db, config, HttpError });
   installOnboardingRoutes(app, { config, db, http, authenticate, logger });
   if (config.legacyMakeEnabled)
     installAutomationRoutes(app, { config, db, http, authenticate, logger });
   installNativeRoutes(app, { db, authenticate, HttpError });
+  installChatRoutes(app, { db, config, http, authenticate, HttpError, logger, decryptToken });
   app.get("/api/whatsapp/status/:companyId", async (req, res, next) => {
     try {
       const ownerId = await authenticate(req.get("Authorization"));
@@ -2393,6 +2479,7 @@ function createApp({
         plan: null,
         sent: 0,
         limit: 0,
+        unlimited: false,
         period: null,
         checkedAt: new Date().toISOString(),
         connection: company
@@ -2411,7 +2498,8 @@ function createApp({
       if (company) {
         response.plan = PLANS[company.plan_actual] ? company.plan_actual : null;
         response.sent = Number(company.mensajes_enviados_mes) || 0;
-        response.limit = PLANS[company.plan_actual]?.limit || 0;
+        response.unlimited = company.internal_owner_access === true;
+        response.limit = response.unlimited ? null : PLANS[company.plan_actual]?.limit || 0;
         response.period = periodFor(company);
         response.checks.credentials = Boolean(
           company.whatsapp_token_oficial &&
@@ -2421,7 +2509,7 @@ function createApp({
         );
         response.checks.template = company.template_approved === true;
         response.checks.confirmationTemplate = company.confirmation_template_approved === true;
-        response.checks.quota = response.sent < response.limit;
+        response.checks.quota = response.unlimited || response.sent < response.limit;
         try {
           validateCompany(company);
           response.checks.access = true;
@@ -2592,6 +2680,7 @@ module.exports = {
   templatePayload,
   verifyWebhook,
   extractEvents,
+  extractDeliveryEvents,
   resolveAction,
   createPostgresDb,
   createMockDb,

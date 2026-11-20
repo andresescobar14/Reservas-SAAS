@@ -1,4 +1,5 @@
 "use strict";
+const { nextReminderTime } = require("./quiet-hours");
 
 const crypto = require("node:crypto");
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
@@ -312,7 +313,7 @@ function createNativeAutomation({
     async finish(job, state, code, requestId = null, retrySeconds = 0) {
       await tx(async (client) => {
         const updated = await client.query(
-          "UPDATE whatsapp_cloud.jobs SET state=$3,last_code=$4,request_id=coalesce($5,request_id),available_at=now()+make_interval(secs=>$6),leased_until=NULL,updated_at=now() WHERE id=$1 AND lease_id=$2 AND state='processing' RETURNING id",
+          "UPDATE whatsapp_cloud.jobs SET state=$3,last_code=$4,request_id=coalesce($5,request_id),available_at=now()+make_interval(secs=>$6),due_at=case when $4='QUIET_HOURS' then now()+make_interval(secs=>$6) else due_at end,leased_until=NULL,updated_at=now() WHERE id=$1 AND lease_id=$2 AND state='processing' RETURNING id",
           [job.id, job.lease_id, state, code, requestId, retrySeconds],
         );
         if (updated.rowCount && state === "sent" && job.kind === "reminder")
@@ -330,7 +331,8 @@ function createNativeAutomation({
   };
 }
 
-async function runAutomationJob({ db, config, deliver, validateSend }, job) {
+async function runAutomationJob({ db, config, deliver, validateSend, clock = Date.now }, job) {
+  const dispatchNow = clock();
   const context = await db.native.context(job);
   if (
     !context?.enabled ||
@@ -338,12 +340,24 @@ async function runAutomationJob({ db, config, deliver, validateSend }, job) {
     +new Date(context.starts_at) !== +new Date(job.starts_at)
   )
     return db.native.finish(job, "cancelled", "BOOKING_CHANGED");
-  if (+new Date(context.starts_at) <= Date.now())
+  if (+new Date(context.starts_at) <= dispatchNow)
     return db.native.finish(job, "skipped", "APPOINTMENT_PAST");
   if (context.whatsapp_authorized !== true)
     return db.native.finish(job, "skipped", "CONSENT_REQUIRED");
   if (job.kind === "reminder" && context.customer_response === "reschedule_requested")
     return db.native.finish(job, "skipped", "RESCHEDULE_REQUESTED");
+  if (job.kind === "reminder" && config.quietHours !== false) {
+    const now = dispatchNow,
+      allowed = nextReminderTime(now, context.timezone);
+    if (allowed > now)
+      return db.native.finish(
+        job,
+        allowed >= +new Date(context.starts_at) ? "skipped" : "blocked",
+        allowed >= +new Date(context.starts_at) ? "QUIET_HOURS_TOO_LATE" : "QUIET_HOURS",
+        null,
+        Math.ceil((allowed - now) / 1000),
+      );
+  }
   try {
     const parts = new Intl.DateTimeFormat("en-CA", {
       timeZone: context.timezone,

@@ -1,10 +1,11 @@
 import type { Company } from "@/lib/types";
 
 export function hasActiveSubscription(
-  company: Pick<Company, "subscription_status" | "trial_ends_at">,
+  company: Pick<Company, "subscription_status" | "trial_ends_at" | "internal_owner_access">,
   now = Date.now(),
 ) {
   return (
+    company.internal_owner_access === true ||
     company.subscription_status === "active" ||
     (company.subscription_status === "trial" && new Date(company.trial_ends_at).getTime() > now)
   );

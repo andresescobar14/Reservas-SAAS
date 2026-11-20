@@ -42,6 +42,8 @@ const reasons: Record<string, string> = {
   SEND_OUTCOME_UNKNOWN: "Resultado incierto: no se reenviará automáticamente",
   META_REJECTED: "Meta rechazó el mensaje",
   AUTOMATION_PAUSED: "Automatización pausada",
+  QUIET_HOURS: "Recordatorio aplazado hasta las 8:00 a. m. del negocio",
+  QUIET_HOURS_TOO_LATE: "Omitido: no hay horario permitido antes de la cita",
 };
 
 export function AutomationPanel({
@@ -222,8 +224,11 @@ export function AutomationPanel({
               pendientes; reactivar no envía mensajes de reservas antiguas.
             </p>
             <p className="max-w-3xl text-sm leading-6 text-slate-500">
-              Si una reserva se crea con menos anticipación, el recordatorio se coloca a mitad del
-              tiempo disponible. Si faltan menos de 10 minutos, se envía solo la confirmación.
+              Los recordatorios se envían entre las 8:00 a. m. y las 8:00 p. m. en la zona horaria
+              del negocio. Si corresponde enviarlo fuera de ese horario, se aplaza a las 8:00 a. m.;
+              si la cita ya habrá comenzado, se omite. Si una reserva se crea con menos
+              anticipación, el recordatorio se coloca a mitad del tiempo disponible. Si faltan menos
+              de 10 minutos, se envía solo la confirmación.
             </p>
             <div className="flex flex-wrap gap-3">
               <Button disabled={busy || !data} type="submit">

@@ -59,7 +59,7 @@ async function fixture(
   await sql.waitReady;
   t.after(() => sql.close());
   await sql.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE reserva_whatsapp NOLOGIN NOSUPERUSER NOBYPASSRLS;
-    CREATE TABLE public.companies(id uuid primary key,owner_id uuid,timezone text default 'America/Mexico_City');
+    CREATE TABLE public.companies(id uuid primary key,owner_id uuid,timezone text default 'America/Mexico_City',internal_owner_access boolean not null default false);
     CREATE TABLE public.customers(id uuid primary key default gen_random_uuid(),company_id uuid,full_name text,phone text,unique(company_id,id),unique(company_id,phone));
     CREATE TABLE public.reservations(id uuid primary key default gen_random_uuid(),company_id uuid,customer_id uuid,service text,starts_at timestamptz,ends_at timestamptz,reminder_due_at timestamptz,reminder_sent_at timestamptz,status text);`);
   for (let repeat = 0; repeat < 2; repeat++)
@@ -69,6 +69,7 @@ async function fixture(
       "onboarding.sql",
       "automation.sql",
       "native-automation.sql",
+      "chat.sql",
     ])
       await sql.exec(
         fs

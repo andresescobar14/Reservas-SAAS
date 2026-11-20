@@ -12,6 +12,7 @@ const {
   decryptToken,
   buttonPayload,
   extractEvents,
+  extractDeliveryEvents,
   createMockDb,
   createPostgresDb,
   createAuthenticator,
@@ -257,6 +258,67 @@ test("TRIAL conserva cuota total y los planes pagados usan mes de México", () =
     "2026-11",
   );
 });
+
+test("propietario interno no vence ni agota cuota, registra consumo y mantiene las protecciones", async (t) => {
+  const expired = {
+    internal_owner_access: true,
+    trial_started_at: "2020-01-01T00:00:00Z",
+    trial_ends_at: "2020-01-08T00:00:00Z",
+    usage_period: "TRIAL",
+    mensajes_enviados_mes: 3500,
+  };
+  const f = await serve(t, { db: fixture(expired) });
+  const responses = await Promise.all([f.send(), f.send(), f.send()]);
+  assert.deepEqual(
+    responses.map((r) => r.status),
+    [200, 200, 200],
+  );
+  assert.equal(f.db.data.companies.get(COMPANY).mensajes_enviados_mes, 3503);
+  const state = await (
+    await fetch(`${f.base}/api/whatsapp/status/${COMPANY}`, {
+      headers: { Authorization: "Bearer owner" },
+    })
+  ).json();
+  assert.equal(state.unlimited, true);
+  assert.equal(state.limit, null);
+  assert.equal(state.checks.quota, true);
+  assert.equal(state.checks.access, true);
+  assert.equal(state.sent, 3503);
+
+  for (const patch of [
+    { status_pago: "SUSPENDIDO" },
+    { whatsapp_acceso_aprobado: false },
+    { template_approved: false },
+  ]) {
+    const blocked = await serve(t, { db: fixture({ ...expired, ...patch }) });
+    assert.equal((await blocked.send()).status, 403);
+    assert.equal(blocked.calls.length, 0);
+  }
+  f.db.data.consents = [];
+  assert.equal((await f.send()).status, 403);
+  assert.equal(
+    (await f.send(body, crypto.randomUUID(), { Authorization: "Bearer other-user" })).status,
+    404,
+  );
+});
+
+test("un cliente no puede obtener acceso de propietario enviándolo en el cuerpo", async (t) => {
+  const f = await serve(t, { db: fixture({ usage_period: "TRIAL", mensajes_enviados_mes: 35 }) });
+  const response = await f.send({ ...body, internal_owner_access: true, unlimited: true });
+  assert.equal(response.status, 403);
+  assert.equal(f.calls.length, 0);
+  assert.throws(
+    () =>
+      validateCompany(
+        company({
+          internal_owner_access: "true",
+          trial_started_at: "2020-01-01T00:00:00Z",
+          trial_ends_at: "2020-01-08T00:00:00Z",
+        }),
+      ),
+    { code: "TRIAL_EXPIRED" },
+  );
+});
 test("cifrado autenticado: clave incorrecta o token alterado falla", () => {
   const envelope = encryptToken("secret", key);
   assert.equal(decryptToken(envelope, key), "secret");
@@ -482,6 +544,87 @@ test("firma sobre bytes crudos obligatoria; persistir antes de confirmar a Meta"
   };
   assert.equal((await f.webhook(value)).status, 503);
 });
+
+test("recibos de entrega se conservan una vez y no alteran citas ni consumos", async (t) => {
+  const f = await serve(t);
+  const receipt = {
+    object: "whatsapp_business_account",
+    entry: [
+      {
+        changes: [
+          {
+            field: "messages",
+            value: {
+              metadata: { phone_number_id: PHONE_ID },
+              statuses: [
+                {
+                  id: "wamid.test-delivery",
+                  status: "failed",
+                  timestamp: String(Math.floor(Date.now() / 1000)),
+                  recipient_id: PHONE,
+                  errors: [
+                    {
+                      code: 131042,
+                      title: "NEVER_STORE",
+                      error_data: { details: "PRIVATE_DETAILS" },
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+  };
+  assert.equal((await f.webhook(receipt, false)).status, 403);
+  assert.equal(f.db.data.inbox.size, 0);
+  assert.equal((await f.webhook(receipt)).status, 200);
+  assert.equal((await f.webhook(receipt)).status, 200);
+  assert.equal(f.db.data.inbox.size, 1);
+  const stored = [...f.db.data.inbox.values()][0];
+  assert.equal(stored.event.status, "failed");
+  assert.deepEqual(stored.event.errorCodes, [131042]);
+  assert.equal(JSON.stringify(stored).includes(PHONE), false);
+  assert.equal(JSON.stringify(stored).includes("PRIVATE_DETAILS"), false);
+  assert.equal(JSON.stringify(stored).includes("NEVER_STORE"), false);
+  await f.db.processNext(config.buttonSecret);
+  assert.equal(stored.state, "done");
+  assert.equal(f.db.data.appointments[0].status, "confirmed");
+  assert.equal(f.db.data.usage.size, 0);
+});
+
+test("recibos malformados se ignoran y estados distintos tienen identidad propia", () => {
+  assert.deepEqual(extractDeliveryEvents({ object: "whatsapp_business_account", entry: 42 }), []);
+  const wrap = (statuses) => ({
+    object: "whatsapp_business_account",
+    entry: [
+      {
+        changes: [
+          { field: "messages", value: { metadata: { phone_number_id: PHONE_ID }, statuses } },
+        ],
+      },
+    ],
+  });
+  const valid = { id: "wamid.test-123", timestamp: "1794268800", status: "sent" };
+  const results = extractDeliveryEvents(
+    wrap([
+      valid,
+      { ...valid, status: "delivered" },
+      { ...valid, status: "read" },
+      { ...valid, status: "unknown" },
+      { ...valid, id: "wamid.inject\nlog" },
+      { ...valid, timestamp: "bad" },
+      { ...valid, timestamp: "9999999999999" },
+      null,
+    ]),
+  );
+  assert.deepEqual(
+    results.map((r) => r.status),
+    ["sent", "delivered", "read"],
+  );
+  assert.equal(new Set(results.map((r) => r.id)).size, 3);
+});
 test("cancelación vincula número receptor + paciente + cita; duplicados no revierten estados", async (t) => {
   const f = await serve(t),
     response = await (await f.send()).json(),
@@ -583,7 +726,7 @@ test("PostgreSQL real: migración, reserva, contador y webhook transaccional", a
   await sql.waitReady;
   t.after(() => sql.close());
   await sql.exec(
-    `CREATE ROLE anon; CREATE ROLE authenticated; CREATE TABLE public.companies(id uuid primary key,owner_id uuid); CREATE TABLE public.customers(id uuid primary key,company_id uuid,full_name text,phone text,unique(company_id,id)); CREATE TABLE public.reservations(id uuid primary key,company_id uuid,customer_id uuid,starts_at timestamptz,status text);`,
+    `CREATE ROLE anon; CREATE ROLE authenticated; CREATE TABLE public.companies(id uuid primary key,owner_id uuid,internal_owner_access boolean not null default false); CREATE TABLE public.customers(id uuid primary key,company_id uuid,full_name text,phone text,unique(company_id,id)); CREATE TABLE public.reservations(id uuid primary key,company_id uuid,customer_id uuid,starts_at timestamptz,status text);`,
   );
   const migration = fs.readFileSync(path.join(__dirname, "../schema.sql"), "utf8");
   await sql.exec(migration);
@@ -602,7 +745,7 @@ test("PostgreSQL real: migración, reserva, contador y webhook transaccional", a
   };
   const db = createPostgresDb(config, pool),
     c = company();
-  await query("INSERT INTO public.companies VALUES($1,$2)", [COMPANY, OWNER]);
+  await query("INSERT INTO public.companies(id,owner_id) VALUES($1,$2)", [COMPANY, OWNER]);
   await query("INSERT INTO public.customers VALUES($1,$2,$3,$4)", [
     OTHER,
     COMPANY,
@@ -625,6 +768,7 @@ test("PostgreSQL real: migración, reserva, contador y webhook transaccional", a
   );
   // Ejecutar todo el flujo con el rol limitado de Railway, sin BYPASSRLS.
   await sql.exec("CREATE ROLE reserva_whatsapp NOLOGIN NOSUPERUSER NOBYPASSRLS;");
+  await sql.exec(fs.readFileSync(path.join(__dirname, "../chat.sql"), "utf8"));
   const permissions = fs.readFileSync(path.join(__dirname, "../runtime-role.sql"), "utf8");
   await sql.exec(
     permissions.replace("grant connect on database postgres to reserva_whatsapp;", ""),
@@ -647,6 +791,10 @@ test("PostgreSQL real: migración, reserva, contador y webhook transaccional", a
     /permission denied/,
   );
   await assert.rejects(
+    () => query("UPDATE public.companies SET internal_owner_access=true"),
+    /permission denied/,
+  );
+  await assert.rejects(
     () =>
       query("INSERT INTO whatsapp_cloud.consents(company_id,phone) VALUES($1,$2)", [
         COMPANY,
@@ -664,6 +812,45 @@ test("PostgreSQL real: migración, reserva, contador y webhook transaccional", a
   );
   assert.deepEqual(stats.rows[0], { sent: 1, reserved: 0 });
   assert.equal((await db.reserve(input, OWNER)).replayed, true);
+  const deliveryReceipts = extractDeliveryEvents({
+    object: "whatsapp_business_account",
+    entry: [
+      {
+        changes: [
+          {
+            field: "messages",
+            value: {
+              metadata: { phone_number_id: PHONE_ID },
+              statuses: [
+                {
+                  id: "wamid.pg-integration",
+                  status: "delivered",
+                  timestamp: String(Math.floor(Date.now() / 1000)),
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+  });
+  await db.enqueue(deliveryReceipts);
+  await db.enqueue(deliveryReceipts);
+  await db.processNext(config.buttonSecret);
+  assert.equal(
+    (await query("SELECT state FROM whatsapp_cloud.inbox WHERE id=$1", [deliveryReceipts[0].id]))
+      .rows[0].state,
+    "done",
+  );
+  assert.equal(
+    (await query("SELECT status FROM public.reservations WHERE id=$1", [APPT])).rows[0].status,
+    "confirmed",
+  );
+  assert.deepEqual(
+    (await query("SELECT sent,reserved FROM whatsapp_cloud.usage WHERE company_id=$1", [COMPANY]))
+      .rows[0],
+    { sent: 1, reserved: 0 },
+  );
   await db.enqueue(extractEvents(event(buttonPayload("cancel", reserved.id, config.buttonSecret))));
   await db.processNext(config.buttonSecret);
   assert.equal(

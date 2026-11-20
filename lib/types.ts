@@ -5,6 +5,7 @@ export type Company = {
   timezone: string;
   subscription_status: "trial" | "active" | "past_due";
   trial_ends_at: string;
+  internal_owner_access?: boolean;
   created_at: string;
   updated_at: string;
 };

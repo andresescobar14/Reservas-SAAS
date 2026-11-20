@@ -3,6 +3,12 @@ import assert from "node:assert/strict";
 import { hasActiveSubscription } from "../lib/subscription";
 
 const now = Date.parse("2026-10-21T12:00:00Z");
+test("La cuenta interna conserva acceso tras vencer la prueba; los clientes no", () => {
+  const expired = { subscription_status: "trial" as const, trial_ends_at: "2020-01-01T00:00:00Z" };
+  assert.equal(hasActiveSubscription({ ...expired, internal_owner_access: true }, now), true);
+  assert.equal(hasActiveSubscription({ ...expired, internal_owner_access: false }, now), false);
+  assert.equal(hasActiveSubscription(expired, now), false);
+});
 test("Suscripción: el servidor aplica el mismo límite de la prueba que PostgreSQL", () => {
   assert.equal(
     hasActiveSubscription(

@@ -25,22 +25,30 @@ export default async function SubscriptionPage() {
       </h1>
       <p className="mt-4 text-base leading-7 text-slate-500">
         {active
-          ? company.subscription_status === "trial"
-            ? `A ${company.name} le quedan ${trialDaysRemaining(company.trial_ends_at)} días de prueba.`
-            : `${company.name} tiene una suscripción activa.`
+          ? company.internal_owner_access
+            ? `${company.name} tiene acceso interno de propietario, sin vencimiento de prueba ni cuota de mensajes del SaaS.`
+            : company.subscription_status === "trial"
+              ? `A ${company.name} le quedan ${trialDaysRemaining(company.trial_ends_at)} días de prueba.`
+              : `${company.name} tiene una suscripción activa.`
           : "Tu prueba ha terminado o tu suscripción requiere atención. Activa tu plan para volver a gestionar tus reservas."}
       </p>
       <div className="pricing-glow mt-7 w-full rounded-2xl px-6 py-7">
         <div className="relative z-10">
-          <h2 className="text-xl font-medium">{brand.proPlan}</h2>
+          <h2 className="text-xl font-medium">
+            {company.internal_owner_access ? "Cuenta del propietario" : brand.proPlan}
+          </h2>
           <p className="mt-3 text-4xl font-medium text-slate-900">
-            ${pricing.monthlyAmount}
-            <span className="ml-2 text-base font-normal text-slate-600">
-              {pricing.currency} / {pricing.period}
-            </span>
+            {company.internal_owner_access ? "Sin límite interno" : `$${pricing.monthlyAmount}`}
+            {!company.internal_owner_access && (
+              <span className="ml-2 text-base font-normal text-slate-600">
+                {pricing.currency} / {pricing.period}
+              </span>
+            )}
           </p>
           <p className="mt-3 text-base leading-7 text-slate-600">
-            {pricing.trialDays} días gratis para empezar. Una agenda más simple para tu negocio.
+            {company.internal_owner_access
+              ? "Las tarifas y los límites de Meta siguen aplicándose al uso de WhatsApp."
+              : `${pricing.trialDays} días gratis para empezar. Una agenda más simple para tu negocio.`}
           </p>
         </div>
       </div>
@@ -56,7 +64,7 @@ export default async function SubscriptionPage() {
           </p>
         ))}
       </div>
-      {validCheckout ? (
+      {company.internal_owner_access ? null : validCheckout ? (
         <Button asChild className="mt-7 h-11 w-full">
           <a href={validCheckout}>Continuar al pago</a>
         </Button>

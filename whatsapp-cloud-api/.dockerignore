@@ -3,3 +3,6 @@
 !package-lock.json
 !server.js
 !native-automation.js
+!chat.js
+!quiet-hours.js
+!public-booking.js

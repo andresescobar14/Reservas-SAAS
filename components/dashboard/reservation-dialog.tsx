@@ -43,7 +43,7 @@ export function ReservationDialog({
         onOpenChange(value);
       }}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-xl">Una nueva reserva</DialogTitle>
           <DialogDescription>Un espacio en tu agenda para alguien importante.</DialogDescription>
@@ -182,6 +182,11 @@ export function ReservationDialog({
             El cliente autorizó recibir confirmación y recordatorios de esta reserva por WhatsApp.
             Solo marca esta casilla si tienes su autorización.
           </label>
+          <p className="rounded-xl border border-border bg-background p-4 text-sm leading-6 text-muted-foreground">
+            Aviso para el cliente: «Si autorizas WhatsApp, recibirás una confirmación de tu reserva
+            y un recordatorio previo desde el número de este negocio, cuando su servicio de mensajes
+            esté activo. Podrás confirmar, solicitar un cambio o cancelar desde el mensaje».
+          </p>
           <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
             <Button
               type="button"

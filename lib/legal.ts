@@ -2,7 +2,7 @@ export const serviceContact = {
   operator: "ANDRES EDUARDO ESCOBAR AYALA",
   country: "Venezuela",
   email: "andresescobar171008@gmail.com",
-  updated: "3 de noviembre de 2026",
+  updated: "18 de noviembre de 2026",
 } as const;
 
 export type LegalSection = { title: string; paragraphs: string[] };
@@ -20,14 +20,17 @@ export const privacySections: LegalSection[] = [
     paragraphs: [
       "Cuenta y negocio: correo de acceso, identificadores de usuario y empresa, nombre del negocio y estado de acceso al servicio. La autenticación se gestiona mediante Supabase Auth.",
       "Reservas y clientes: nombre, teléfono, datos de contacto que el negocio introduce, servicio, fecha, horario, estado de la reserva y autorización de mensajes para esa reserva. No incluyas diagnósticos, expedientes clínicos ni otros datos sensibles en los mensajes de recordatorio.",
+      "Reservas públicas: al agendar desde el enlace de un negocio, guardamos tu nombre, teléfono, horario elegido y aceptación o rechazo de las notificaciones de WhatsApp. La página solo muestra disponibilidad; no publica nombres ni datos de otros clientes. La aceptación queda vinculada a esa reserva y a la versión del aviso que se mostró.",
       "Integración con Meta: identificadores de la cuenta y el número de WhatsApp Business que autorizas, credencial de acceso, estado de conexión, plantillas, mensajes y respuestas de botones, identificadores y estados de entrega. Si autorizas compartir datos de WhatsApp Business y Meta los entrega, también se pueden recibir contactos y actividad del móvil. Compartir contactos o historial no autoriza enviarles recordatorios.",
       "Operación: registros de solicitudes, consentimiento, cuotas, trabajos programados y errores técnicos necesarios para prestar y proteger el servicio. Si conectas Cal.com, recibimos los datos mínimos de las reservas y sus cambios mediante el webhook de esa integración.",
+      "Bandeja de mensajes: cuando conectas el número de tu negocio, se registran las nuevas conversaciones recibidas y enviadas mediante la API, con su contenido de texto, contacto, fechas y estados de entrega, para que puedas atenderlas desde el dashboard. El historial previo del teléfono no se importa automáticamente. Esta versión no descarga archivos adjuntos.",
     ],
   },
   {
     title: "Para qué se usan los datos",
     paragraphs: [
       "Se utilizan para autenticar al propietario, separar los datos de cada negocio, mostrar y gestionar reservas y clientes, conectar la cuenta de WhatsApp elegida y comprobar sus plantillas y permisos.",
+      "La bandeja permite al propietario leer sus conversaciones, responder a mensajes entrantes y consultar una próxima reserva. El contenido y los datos de contacto se guardan cifrados en las tablas privadas del motor; no se publican ni se muestran a otras empresas.",
       "Cuando el negocio activa la automatización y se cumplen sus requisitos de acceso, plantilla y consentimiento, se programa una confirmación al reservar y un recordatorio previo. Las respuestas de WhatsApp permiten registrar una confirmación, una cancelación o una solicitud de cambio. Los estados de entrega y los registros técnicos ayudan a evitar duplicados y resolver incidencias.",
     ],
   },

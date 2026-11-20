@@ -10,6 +10,7 @@ create table public.companies (
   subscription_status text not null default 'trial'
     check (subscription_status in ('trial', 'active', 'past_due')),
   trial_ends_at timestamptz not null default (now() + interval '14 days'),
+  internal_owner_access boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -105,7 +106,7 @@ returns boolean language sql stable security definer set search_path = '' as $$
   select exists (
     select 1 from public.companies c
     where c.id = target_company_id and c.owner_id = (select auth.uid())
-      and (c.subscription_status = 'active'
+      and (c.internal_owner_access or c.subscription_status = 'active'
         or (c.subscription_status = 'trial' and c.trial_ends_at > now()))
   );
 $$;

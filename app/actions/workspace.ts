@@ -53,7 +53,12 @@ export async function saveReservation(formData: FormData): Promise<ActionResult>
   if (error)
     return { error: "No se pudo guardar la reserva. Revisa tu conexión e inténtalo de nuevo." };
   revalidatePath("/dashboard", "layout");
-  return { success: "Reserva guardada con éxito." };
+  return {
+    success:
+      formData.get("whatsapp_consent") === "on"
+        ? "Reserva guardada con autorización de WhatsApp. Los mensajes se enviarán si la conexión, las plantillas y la automatización están activas."
+        : "Reserva guardada. No se enviarán mensajes de WhatsApp sin autorización.",
+  };
 }
 
 export async function setReservationStatus(

@@ -115,7 +115,9 @@ Despliegue de automatización confirmado `f59c651b-d76b-4372-9b13-d11708e3564b`,
 
 Pruebas reales: `/health` 200, envío sin sesión 401, webhook sin token correcto 403 y evento firmado vacío 200. Meta verificó el callback con HTTP 200. Antes de enviar recordatorios reales, aprovisionar empresa/consentimiento/plantilla y comprobar un envío y su respuesta de botón con Meta. Railway construyó la imagen Docker; no hay Docker instalado en este equipo.
 
-Para reinstalar permisos en otra BD: crear el LOGIN limitado con una contraseña privada y ejecutar `runtime-role.sql` como administrador después de `schema.sql`. Las aprobaciones y cambios de plan deben ejecutarse desde una sesión administrativa; el proceso de Railway no puede realizarlos.
+Para reinstalar permisos en otra BD: crear el LOGIN limitado con una contraseña privada y ejecutar `owner-access.sql` y `runtime-role.sql` como administrador después de `schema.sql`. Las aprobaciones y cambios de plan deben ejecutarse desde una sesión administrativa; el proceso de Railway no puede realizarlos.
+
+`owner-access.sql` añade `public.companies.internal_owner_access`, apagado por defecto. Solo un administrador puede concederlo a la empresa interna del propietario: elimina el vencimiento y la cuota del SaaS, conserva consumos y no cambia planes de clientes. El servidor de Railway solo puede leer este permiso. Suspensión, aprobación de TRIAL, consentimiento, plantillas, conexión y límites/cargos de Meta siguen aplicándose. No habilita la automatización.
 
 ## Alcance de esta entrega
 

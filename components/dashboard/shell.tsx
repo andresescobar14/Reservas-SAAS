@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   MessageCircle,
+  MessagesSquare,
   Plug,
   Sparkles,
   Users,
@@ -26,10 +27,12 @@ import { trialDaysRemaining } from "@/lib/subscription";
 import { signOut } from "@/app/actions/auth";
 import type { Company } from "@/lib/types";
 
-export type DashboardView = "calendario" | "clientes" | "whatsapp" | "integraciones" | "cuenta";
+export type DashboardView =
+  "calendario" | "clientes" | "mensajes" | "whatsapp" | "integraciones" | "cuenta";
 const navigation = [
   { id: "calendario", title: "Calendario", icon: CalendarDays },
   { id: "clientes", title: "Clientes", icon: Users },
+  { id: "mensajes", title: "Mensajes", icon: MessagesSquare },
   { id: "whatsapp", title: "WhatsApp", icon: MessageCircle },
   { id: "integraciones", title: "Integraciones", icon: Plug },
 ] as const;
@@ -144,7 +147,7 @@ export function DashboardShell({
             })}
           </nav>
           <div className="mt-auto pt-10">
-            {company.subscription_status === "trial" && (
+            {company.subscription_status === "trial" && !company.internal_owner_access && (
               <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
                 <div className="flex items-center gap-2 text-xs font-medium text-emerald-900">
                   <Sparkles size={15} />
@@ -227,9 +230,11 @@ export function DashboardShell({
                 <span className="pulse-dot size-1.5 rounded-full bg-emerald-500" />
                 {demo
                   ? "Modo demo"
-                  : company.subscription_status === "trial"
-                    ? "Prueba gratuita"
-                    : "Plan activo"}
+                  : company.internal_owner_access
+                    ? "Propietario"
+                    : company.subscription_status === "trial"
+                      ? "Prueba gratuita"
+                      : "Plan activo"}
               </span>
               <span className="flex size-8 items-center justify-center rounded-full border border-slate-200 text-xs font-medium text-slate-500">
                 {company.name.slice(0, 1).toUpperCase()}

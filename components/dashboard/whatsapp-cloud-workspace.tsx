@@ -25,7 +25,8 @@ type CloudStatus = {
   };
   plan: "TRIAL" | "PRO" | "PREMIUM" | null;
   sent: number;
-  limit: number;
+  limit: number | null;
+  unlimited?: boolean;
   period: string | null;
   checkedAt: string;
 };
@@ -116,7 +117,12 @@ export function WhatsAppCloudWorkspace({
     { label: "Número oficial y credencial configurados", done: status?.checks.credentials },
     { label: "Plantilla de recordatorio aprobada", done: status?.checks.template },
     { label: "Plantilla de confirmación aprobada", done: status?.checks.confirmationTemplate },
-    { label: "Acceso aprobado y plan vigente", done: status?.checks.access },
+    {
+      label: status?.unlimited
+        ? "Acceso interno del propietario"
+        : "Acceso aprobado y plan vigente",
+      done: status?.checks.access,
+    },
   ];
 
   return (
@@ -249,16 +255,20 @@ export function WhatsAppCloudWorkspace({
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-medium">
-                {status?.plan
-                  ? `${status.sent.toLocaleString("es-MX")} / ${status.limit.toLocaleString("es-MX")}`
-                  : "Pendiente de activación"}
+                {status?.unlimited
+                  ? `${status.sent.toLocaleString("es-MX")} · Sin límite interno`
+                  : status?.plan
+                    ? `${status.sent.toLocaleString("es-MX")} / ${(status.limit ?? 0).toLocaleString("es-MX")}`
+                    : "Pendiente de activación"}
               </p>
               <p className="mt-3 text-base leading-7 text-slate-600">
-                {status?.plan === "TRIAL"
-                  ? "TRIAL · 35 mensajes totales durante 7 días. El envío requiere aprobación manual."
-                  : status?.plan
-                    ? `${status.plan} · Mensajes aceptados por Meta durante el mes actual.`
-                    : "El administrador debe activar el plan y configurar el número antes del primer envío."}
+                {status?.unlimited
+                  ? "Cuenta interna del propietario. El consumo se registra y las tarifas y límites de Meta siguen aplicándose."
+                  : status?.plan === "TRIAL"
+                    ? "TRIAL · 35 mensajes totales durante 7 días. El envío requiere aprobación manual."
+                    : status?.plan
+                      ? `${status.plan} · Mensajes aceptados por Meta durante el mes actual.`
+                      : "El administrador debe activar el plan y configurar el número antes del primer envío."}
               </p>
               <p className="mt-3 text-sm leading-6 text-slate-500">
                 Un mensaje aceptado por la API todavía puede estar pendiente de entrega.

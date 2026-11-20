@@ -898,4 +898,5 @@ summary:focus-visible {
 .landing-feature:hover { box-shadow: 0 20px 50px -20px #04785740; }
 @media (prefers-reduced-motion: reduce) {
   .chip-float { animation: none !important; }
+  .scroll-tilt-content { transform: none !important; }
 }

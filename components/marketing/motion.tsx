@@ -83,14 +83,17 @@ export function CountUp({ value, pad = 2 }: { value: number; pad?: number }) {
 /** El producto "se levanta" al hacer scroll: inclinación 3D que se corrige y escala. */
 export function ScrollTilt({ children, className }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
-  const reduce = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "start 0.25"] });
   const rotateX = useTransform(scrollYProgress, [0, 1], [14, 0]);
   const scale = useTransform(scrollYProgress, [0, 1], [0.94, 1]);
-  if (reduce) return <div className={className}>{children}</div>;
   return (
     <div ref={ref} className={className} style={{ perspective: 1400 }}>
-      <motion.div style={{ rotateX, scale, transformOrigin: "50% 0%" }}>{children}</motion.div>
+      <motion.div
+        className="scroll-tilt-content"
+        style={{ rotateX, scale, transformOrigin: "50% 0%" }}
+      >
+        {children}
+      </motion.div>
     </div>
   );
 }

@@ -11,6 +11,7 @@ test("Esquema y aislamiento multi-tenant en PostgreSQL", async (t) => {
       create role anon;
       create role authenticated;
       create role service_role bypassrls;
+      create role reserva_whatsapp nologin nosuperuser nobypassrls;
       create schema auth;
       create table auth.users (id uuid primary key, raw_user_meta_data jsonb default '{}');
       create function auth.uid() returns uuid language sql stable as $$
@@ -20,11 +21,22 @@ test("Esquema y aislamiento multi-tenant en PostgreSQL", async (t) => {
       grant execute on function auth.uid() to authenticated;
     `);
     await db.exec(await readFile(new URL("../supabase-schema.sql", import.meta.url), "utf8"));
+    const ownerMigration = await readFile(
+      new URL("../whatsapp-cloud-api/owner-access.sql", import.meta.url),
+      "utf8",
+    );
+    await db.exec(ownerMigration);
+    await db.exec(ownerMigration);
     const ownerA = "11111111-1111-4111-8111-111111111111";
     const ownerB = "22222222-2222-4222-8222-222222222222";
     await db.query("insert into auth.users(id, raw_user_meta_data) values ($1, $2), ($3, $4)", [
       ownerA,
-      { company_name: "Negocio A", timezone: "America/Caracas", subscription_status: "active" },
+      {
+        company_name: "Negocio A",
+        timezone: "America/Caracas",
+        subscription_status: "active",
+        internal_owner_access: true,
+      },
       ownerB,
       { company_name: "Negocio B" },
     ]);
@@ -33,6 +45,7 @@ test("Esquema y aislamiento multi-tenant en PostgreSQL", async (t) => {
       owner_id: string;
       subscription_status: string;
       trial_days: number;
+      internal_owner_access: boolean;
     }>(
       "select *, extract(epoch from (trial_ends_at-created_at))/86400 as trial_days from companies order by name",
     );
@@ -51,6 +64,7 @@ test("Esquema y aislamiento multi-tenant en PostgreSQL", async (t) => {
       () => {
         assert.equal(companies.length, 2);
         assert.equal(companyA.subscription_status, "trial");
+        assert.equal(companyA.internal_owner_access, false);
         assert.equal(Number(companyA.trial_days), 14);
       },
     );
@@ -139,6 +153,7 @@ test("Esquema y aislamiento multi-tenant en PostgreSQL", async (t) => {
       async () => {
         for (const statement of [
           "update companies set subscription_status = 'active'",
+          "update companies set internal_owner_access = true",
           "update companies set trial_ends_at = now() + interval '1 year'",
           `update companies set owner_id = '${ownerB}'`,
           "insert into companies(owner_id, name) values (auth.uid(), 'Otra empresa')",
@@ -217,6 +232,46 @@ test("Esquema y aislamiento multi-tenant en PostgreSQL", async (t) => {
         ]);
         await asOwner(ownerA);
         assert.equal((await db.query("select * from customers")).rows.length, 0);
+      },
+    );
+
+    await t.test(
+      "El administrador habilita solo la empresa interna; ni clientes ni Railway pueden conceder el permiso",
+      async () => {
+        await db.exec("reset role");
+        await db.query("update companies set internal_owner_access=true where id=$1", [
+          companyA.id,
+        ]);
+        await asOwner(ownerA);
+        assert.equal((await db.query("select * from customers")).rows.length, 1);
+        assert.equal(
+          (
+            await db.query<{ allowed: boolean }>(
+              "select public.has_company_access($1) as allowed",
+              [companyB.id],
+            )
+          ).rows[0].allowed,
+          false,
+        );
+        await assert.rejects(
+          db.exec("update companies set internal_owner_access=false"),
+          /permission denied/,
+        );
+        await asOwner(ownerB);
+        assert.equal(
+          (
+            await db.query<{ allowed: boolean }>(
+              "select public.has_company_access($1) as allowed",
+              [companyA.id],
+            )
+          ).rows[0].allowed,
+          false,
+        );
+        await db.exec("reset role; set role reserva_whatsapp");
+        await assert.rejects(
+          db.exec("update companies set internal_owner_access=true"),
+          /permission denied/,
+        );
       },
     );
 

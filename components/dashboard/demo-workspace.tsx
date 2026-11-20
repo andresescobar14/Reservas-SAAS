@@ -10,6 +10,7 @@ import {
 } from "@/components/dashboard/integrations-workspace";
 import type { ActionResult, Booking, Company, Customer } from "@/lib/types";
 import { AccountWorkspace } from "@/components/dashboard/account-workspace";
+import { InboxWorkspace } from "@/components/dashboard/inbox-workspace";
 
 export function DemoWorkspace({
   company,
@@ -112,6 +113,14 @@ export function DemoWorkspace({
         />
       )}
       {view === "whatsapp" && <WhatsAppWorkspace />}
+      {view === "mensajes" && (
+        <InboxWorkspace
+          companyName={company.name}
+          timezone={company.timezone}
+          referenceTime={company.created_at}
+          demo
+        />
+      )}
       {view === "integraciones" && <IntegrationsWorkspace />}
       {view === "cuenta" && (
         <AccountWorkspace

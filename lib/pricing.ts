@@ -15,7 +15,7 @@ export const trialFeatures = [
 ] as const;
 
 export const monthlyFeatures = [
-  "Todo lo incluido en la prueba",
+  "Agenda y directorio de clientes",
   "Acceso continuo a tu agenda",
   "Reservas y clientes en un solo lugar",
   "Historial de citas siempre a mano",
