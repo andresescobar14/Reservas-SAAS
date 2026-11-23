@@ -533,7 +533,36 @@ function startAutomationWorker({
   };
 }
 
+// Una pasada completa de la cola, para entornos sin servidor siempre encendido
+// (Vercel): la dispara una tarea programada o una petición. Las leases de la
+// base de datos evitan que dos pasadas simultáneas envíen el mismo trabajo.
+async function runAutomationPass(
+  { db, config, deliver, validateSend, logger = console },
+  { deadline = Date.now() + 20000, cleanup = false } = {},
+) {
+  let sent = 0;
+  for (let i = 0; i < 20 && Date.now() < deadline; i++) if (!(await db.native.processCal())) break;
+  while (Date.now() < deadline) {
+    const jobs = [];
+    for (let i = 0; i < 4; i++) {
+      const job = await db.native.claim();
+      if (!job) break;
+      jobs.push(job);
+    }
+    if (!jobs.length) break;
+    const results = await Promise.allSettled(
+      jobs.map((job) => runAutomationJob({ db, config, deliver, validateSend }, job)),
+    );
+    sent += jobs.length;
+    if (results.some((result) => result.status === "rejected"))
+      logger.error("[automation] Un trabajo se recuperará tras vencer su lease.");
+  }
+  if (cleanup) await db.native.cleanup();
+  return sent;
+}
+
 module.exports = {
+  runAutomationPass,
   createNativeAutomation,
   installNativeRoutes,
   installCalWebhook,

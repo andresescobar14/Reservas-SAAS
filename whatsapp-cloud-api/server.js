@@ -47,6 +47,7 @@ function readConfig(env = process.env) {
     dbMode: env.DB_MODE || "postgres",
     databaseUrl: env.DATABASE_URL,
     pgCA: env.PG_CA_CERT,
+    pgPoolMax: env.PG_POOL_MAX,
     supabaseUrl: env.SUPABASE_URL,
     supabaseKey: env.SUPABASE_PUBLISHABLE_KEY,
     graphVersion: env.META_GRAPH_VERSION,
@@ -551,7 +552,7 @@ function createPostgresDb(config, poolOverride) {
     new Pool({
       connectionString: url.toString(),
       ssl: { rejectUnauthorized: true, ...(config.pgCA ? { ca: config.pgCA } : {}) },
-      max: 8,
+      max: Number(config.pgPoolMax) || 8,
       connectionTimeoutMillis: 5000,
       idleTimeoutMillis: 30000,
       statement_timeout: 8000,
@@ -2607,6 +2608,13 @@ function startWorker(db, secret, logger = console) {
     await active;
   };
 }
+// Una pasada de los eventos recibidos de Meta (bandeja, botones, estados).
+async function runWorkerPass(db, secret, { deadline = Date.now() + 20000, cleanup = false } = {}) {
+  if (cleanup && db.onboarding) await db.onboarding.cleanup();
+  let processed = 0;
+  while (Date.now() < deadline && (await db.processNext(secret))) processed++;
+  return processed;
+}
 async function startServer() {
   const config = readConfig();
   const db = config.dbMode === "mock" ? createMockDb() : createPostgresDb(config);
@@ -2692,5 +2700,6 @@ module.exports = {
   validateAutomation,
   deliverReminder,
   startWorker,
+  runWorkerPass,
   startServer,
 };
