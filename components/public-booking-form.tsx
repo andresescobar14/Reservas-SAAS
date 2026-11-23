@@ -20,7 +20,12 @@ import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/theme-toggle";
-import type { PublicBookingPage, PublicBookingReceipt } from "@/lib/public-booking";
+import {
+  bookingServiceUnavailable,
+  readBookingResponse,
+  type PublicBookingPage,
+  type PublicBookingReceipt,
+} from "@/lib/public-booking";
 
 function formatDate(value: string, timezone: string) {
   return DateTime.fromISO(value)
@@ -77,16 +82,20 @@ export function PublicBookingForm({
               : AbortSignal.timeout(20000),
           },
         );
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || "No pudimos consultar los horarios.");
+        const parsed = await readBookingResponse(response, "No pudimos consultar los horarios.");
+        if (!parsed.ok) throw new Error(parsed.message);
         if (signal?.aborted || sequence !== loadSequence.current) return;
-        const result = data as PublicBookingPage;
+        const result = parsed.data as unknown as PublicBookingPage;
         setPage(result);
         setDate(result.selectedDate || "");
         setTime("");
       } catch (e) {
         if (!signal?.aborted && sequence === loadSequence.current)
-          setError(e instanceof Error ? e.message : "No pudimos consultar la agenda.");
+          setError(
+            e instanceof Error && e.name !== "TimeoutError" && e.name !== "TypeError"
+              ? e.message
+              : bookingServiceUnavailable,
+          );
       } finally {
         if (!signal?.aborted && sequence === loadSequence.current) setBusy(false);
       }
@@ -113,14 +122,17 @@ export function PublicBookingForm({
           website: website.current?.value || "",
         }),
       });
-      const data = await response.json();
-      if (!response.ok) {
-        if (response.status === 409 && data.error === "SLOT_UNAVAILABLE") {
+      const parsed = await readBookingResponse(
+        response,
+        "No pudimos guardar tu reserva. Inténtalo de nuevo.",
+      );
+      if (!parsed.ok) {
+        if (response.status === 409 && parsed.code === "SLOT_UNAVAILABLE") {
           await load(date);
         }
-        throw new Error(data.message || "No pudimos guardar tu reserva. Inténtalo de nuevo.");
+        throw new Error(parsed.message);
       }
-      setReceipt(data.receipt);
+      setReceipt(parsed.data.receipt as PublicBookingReceipt);
     } catch (e) {
       setError(
         e instanceof Error && e.name !== "TimeoutError"

@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { PublicBookingForm } from "@/components/public-booking-form";
-import type { PublicBookingPage } from "@/lib/public-booking";
+import {
+  bookingServiceUnavailable,
+  readBookingResponse,
+  type PublicBookingPage,
+} from "@/lib/public-booking";
 
 export const metadata: Metadata = {
   title: "Reservar cita",
@@ -19,11 +23,14 @@ export default async function BookingPage({ params }: { params: Promise<{ slug: 
       cache: "no-store",
       signal: AbortSignal.timeout(15000),
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "No pudimos consultar los horarios.");
-    initialPage = data;
+    const parsed = await readBookingResponse(response, "No pudimos consultar los horarios.");
+    if (!parsed.ok) throw new Error(parsed.message);
+    initialPage = parsed.data as unknown as PublicBookingPage;
   } catch (error) {
-    initialError = error instanceof Error ? error.message : "No pudimos consultar la agenda.";
+    initialError =
+      error instanceof Error && error.name !== "TimeoutError" && error.name !== "TypeError"
+        ? error.message
+        : bookingServiceUnavailable;
   }
   return (
     <PublicBookingForm
